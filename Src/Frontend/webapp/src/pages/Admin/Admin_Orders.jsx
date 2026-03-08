@@ -456,6 +456,7 @@ const AdminOrders = ({ userData }) => {
                               {item.size && ` [${item.size}]`}
                               ({item.quantity})
                               {item.isCustom && <span className="custom-indicator">CUSTOM</span>}
+                              {item.description && <span title="Has notes" style={{marginLeft:'4px'}}>✏️</span>}
                             </span>
                           ))}
                           {order.orderItems && order.orderItems.length > 3 && (
@@ -588,6 +589,9 @@ const AdminOrders = ({ userData }) => {
                         <span className="item-name">{item.itemName}</span>
                         {item.size && <span className="item-size">[{item.size}]</span>}
                         <span className="item-qty">× {item.quantity}</span>
+                        {item.description && (
+                          <div className="item-notes">Notes: {item.description}</div>
+                        )}
                       </div>
                       {item.isCustom && <span className="custom-badge">CUSTOM REQUEST</span>}
                     </div>
@@ -894,6 +898,12 @@ const AdminOrders = ({ userData }) => {
         .order-item-detail .item-qty {
           color: var(--text-on-dark-muted, #aaa);
           font-size: 13px;
+        }
+        .order-item-detail .item-notes {
+          color: var(--text-on-dark-muted, #bbb);
+          font-size: 12px;
+          margin-left: 16px;
+          font-style: italic;
         }
         
         .order-item-detail .custom-badge {
