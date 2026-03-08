@@ -304,6 +304,11 @@ public class OrderController {
                         item.setItemName((String) itemData.get("itemName"));
                         item.setQuantity((Integer) itemData.get("quantity"));
 
+                        // Optional description/notes from client
+                        if (itemData.containsKey("description")) {
+                            item.setDescription((String) itemData.get("description"));
+                        }
+
                         // Handle size field if present
                         if (itemData.containsKey("size")) {
                             item.setSize((String) itemData.get("size"));

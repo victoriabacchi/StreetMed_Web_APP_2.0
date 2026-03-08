@@ -28,6 +28,9 @@ public class OrderItem {
     @Column(name = "is_custom")
     private Boolean isCustom = false;  // New field to track custom items
 
+    @Column(name = "description")
+    private String description; // Optional notes from the requester
+
     // Default constructor
     public OrderItem() {}
 
@@ -78,5 +81,13 @@ public class OrderItem {
 
     public void setIsCustom(Boolean isCustom) {
         this.isCustom = isCustom;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
     }
 }

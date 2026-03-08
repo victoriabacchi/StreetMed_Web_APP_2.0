@@ -278,6 +278,11 @@ const Home_OrderHistory = ({ userId }) => {
                         <span style={{ color: '#666', marginLeft: '10px' }}>
                           x {item.quantity}
                         </span>
+                        {item.description && (
+                          <div style={{ fontSize: '12px', color: '#666', marginTop: '2px' }}>
+                            Notes: {item.description}
+                          </div>
+                        )}
                       </li>
                     ))}
                   </ul>

@@ -27,6 +27,7 @@ const Home = ({ username, email, phone, userId, onLogout }) => {
   const [showItemDetailModal, setShowItemDetailModal] = useState(false);
   const [selectedSize, setSelectedSize] = useState("");
   const [selectedQuantity, setSelectedQuantity] = useState(1);
+  const [selectedItemDescription, setSelectedItemDescription] = useState("");
   const [isLoadingItems, setIsLoadingItems] = useState(false);
   
   // ============== Category Filter State ==============
@@ -37,6 +38,7 @@ const Home = ({ username, email, phone, userId, onLogout }) => {
   const [showCustomItemModal, setShowCustomItemModal] = useState(false);
   const [customItemName, setCustomItemName] = useState("");
   const [customItemQuantity, setCustomItemQuantity] = useState(1);
+  const [customItemDescription, setCustomItemDescription] = useState("");
 
   // Initialize navigate hook for page navigation (Profile, Feedback, Order History)
   const navigate = useNavigate();
@@ -109,6 +111,7 @@ const Home = ({ username, email, phone, userId, onLogout }) => {
     const sizes = item.sizeQuantities ? Object.keys(item.sizeQuantities) : [];
     setSelectedSize(sizes.length > 0 ? sizes[0] : "");
     setSelectedQuantity(1);
+    setSelectedItemDescription("");
     console.log("handleSelectItem: Set selectedSize and selectedQuantity");
   };
 
@@ -118,6 +121,7 @@ const Home = ({ username, email, phone, userId, onLogout }) => {
     setSelectedItem(null);
     setSelectedSize("");
     setSelectedQuantity(1);
+    setSelectedItemDescription("");
   };
 
   const handleAddSelectedItemToCart = () => {
@@ -133,7 +137,7 @@ const Home = ({ username, email, phone, userId, onLogout }) => {
     const displayName = selectedSize ? `${selectedItem.name} (${selectedSize})` : selectedItem.name;
     
     const newCart = [...cart];
-    const existingIndex = newCart.findIndex((c) => c.displayName === displayName);
+    const existingIndex = newCart.findIndex((c) => c.displayName === displayName && c.requestDescription === selectedItemDescription);
     
     if (existingIndex >= 0) {
       newCart[existingIndex].quantity += selectedQuantity;
@@ -146,11 +150,13 @@ const Home = ({ username, email, phone, userId, onLogout }) => {
         quantity: selectedQuantity,
         imageId: selectedItem.imageId, 
         description: selectedItem.description,
-        category: selectedItem.category
+        category: selectedItem.category,
+        requestDescription: selectedItemDescription
       });
       console.log("handleAddSelectedItemToCart: Added new item to cart with base name:", baseItemName);
     }
     setCart(newCart);
+    setSelectedItemDescription("");
     closeItemDetailModal();
   };
 
@@ -182,13 +188,15 @@ const Home = ({ username, email, phone, userId, onLogout }) => {
         name: itemName,
         displayName: itemName,  // For custom items, display name is same as base name
         size: null,
-        quantity: quantity
+        quantity: quantity,
+        requestDescription: customItemDescription
       });
     }
     setCart(newCart);
     setShowCustomItemModal(false);
     setCustomItemName("");
     setCustomItemQuantity(1);
+    setCustomItemDescription("");
   };
 
   const toggleCart = () => {
@@ -267,13 +275,15 @@ const Home = ({ username, email, phone, userId, onLogout }) => {
               itemName: item.name, 
               quantity: item.quantity,
               size: item.size || null,
-              isCustom: item.isCustom || false
+              isCustom: item.isCustom || false,
+              description: item.requestDescription || null
             }
           });
           return {
             itemName: item.name,  // Use 'name' field (base name), NOT 'displayName'
             quantity: item.quantity,
-            size: item.size || null  // Include size if present
+            size: item.size || null,  // Include size if present
+            description: item.requestDescription || null
           };
         }),
       };
@@ -604,6 +614,29 @@ const Home = ({ username, email, phone, userId, onLogout }) => {
                 }}
               />
             </div>
+            <div style={{ marginBottom: '20px', textAlign: 'left' }}>
+              <label style={{
+                color: '#fff',
+                display: 'block',
+                marginBottom: '8px',
+                fontWeight: '600',
+                fontSize: '16px'
+              }}>Notes (optional):</label>
+              <textarea
+                value={selectedItemDescription}
+                onChange={e => setSelectedItemDescription(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '14px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  backgroundColor: '#fff',
+                  fontSize: '16px',
+                  boxSizing: 'border-box',
+                  minHeight: '60px'
+                }}
+              />
+            </div>
 
             {/* Add to Cart Button - Blue full width */}
             <button 
@@ -690,6 +723,23 @@ const Home = ({ username, email, phone, userId, onLogout }) => {
                   backgroundColor: '#fff',
                   fontSize: '14px',
                   boxSizing: 'border-box'
+                }}
+              />
+            </div>
+            <div className="formGroup" style={{marginBottom: '20px'}}>
+              <label style={{color: '#fff', display: 'block', marginBottom: '8px', fontWeight: '600'}}>Notes (optional):</label>
+              <textarea
+                value={customItemDescription}
+                onChange={(e) => setCustomItemDescription(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '12px',
+                  borderRadius: '8px',
+                  border: '1px solid #3a5070',
+                  backgroundColor: '#fff',
+                  fontSize: '14px',
+                  boxSizing: 'border-box',
+                  minHeight: '60px'
                 }}
               />
             </div>
@@ -782,6 +832,9 @@ const Home = ({ username, email, phone, userId, onLogout }) => {
                         <h4 style={{color: '#fff', margin: '0 0 5px 0', fontSize: '16px'}}>{c.displayName || c.name}</h4>
                         {c.category && (
                           <p style={{fontSize: '12px', color: '#999', margin: 0}}>{c.category}</p>
+                        )}
+                        {c.requestDescription && (
+                          <p style={{fontSize: '12px', color: '#aaa', margin: '4px 0 0 0'}}>Notes: {c.requestDescription}</p>
                         )}
                       </div>
                       <div style={{display: 'flex', alignItems: 'center', gap: '10px'}}>
