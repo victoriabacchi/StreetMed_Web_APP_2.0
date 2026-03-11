@@ -27,4 +27,6 @@ public interface CargoItemRepository extends JpaRepository<CargoItem, Integer> {
     List<CargoItem> findByCategoryAndIsAvailableTrue(String category);
 
     boolean existsByNameIgnoreCase(String name);
+
+    List<CargoItem> findAllByOrderByCategoryAscNameAsc();
 }
