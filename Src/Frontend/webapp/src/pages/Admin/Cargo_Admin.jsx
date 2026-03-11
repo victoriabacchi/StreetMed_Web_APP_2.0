@@ -104,6 +104,10 @@ const Cargo_Admin = ({ userData }) => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteItemId, setDeleteItemId] = useState(null);
 
+  // === Sorting and Filtering Options ===
+  const [sortOption, setSortOption] = useState('alphabetical');
+  const [filterCategory, setFilterCategory] = useState('All');
+
   // === Helper Functions ===
   
   // Get available sizes that haven't been added yet
@@ -404,6 +408,20 @@ const Cargo_Admin = ({ userData }) => {
     }
   };
 
+  const displayedItems = React.useMemo(() => {
+    let items = [...allItems];
+    if(filterCategory !== 'All') {
+      items = items.filter(item => item.category === filterCategory);
+    }
+    if(sortOption === 'alphabetical') {
+      items.sort((a, b) => a.name.localeCompare(b.name));
+    } else if (sortOption === 'stock') {
+      items.sort((a, b) => a.quantity - b.quantity);
+    }
+
+    return items;
+  }, [allItems, sortOption, filterCategory]);
+
   return (
     <div className="page-container">
       {/* Header */}
@@ -454,6 +472,31 @@ const Cargo_Admin = ({ userData }) => {
               Error: {allItemsError}
             </div>
           )}
+          
+          {/* Sorting and Filtering */}
+          <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
+            {/* Sorting Dropdown */}
+            <select
+              value={sortOption}
+              onChange={e => setSortOption(e.target.value)}
+              className="select-btn"
+            >
+              <option value="alphabetical">Alphabetical (A–Z)</option>
+              <option value="stock">Stock level (Low → High)</option>
+            </select>
+
+            {/* Category Filter Dropdown */}
+            <select
+              value={filterCategory}
+              onChange={e => setFilterCategory(e.target.value)}
+              className="select-btn"
+            >
+              <option value="All">All Categories</option>
+              {CATEGORY_OPTIONS.map(cat => (
+                <option key={cat} value={cat}>{cat}</option>
+              ))}
+            </select>
+          </div>
 
           <div className="cargo-card">
             <div className="table-title">
@@ -482,7 +525,7 @@ const Cargo_Admin = ({ userData }) => {
                     </tr>
                   </thead>
                   <tbody>
-                    {allItems.map(item => {
+                    {displayedItems.map(item => {
                       const sizes = item.sizeQuantities || {};
                       const sortedSizeEntries = getSortedSizeEntries(sizes);
                       const sizeQtyDisplay = sortedSizeEntries
