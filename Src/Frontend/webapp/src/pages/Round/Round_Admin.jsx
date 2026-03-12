@@ -102,6 +102,15 @@ function Round_Admin() {
 
   // Create round
   const createRound = async () => {
+    if(newRound.maxParticipants < 0) {
+      setMessage("Minimum participants must be at least 5.");
+      return;
+    }
+    if(newRound.maxParticipants > 100) {
+      setMessage("Maximum participants cannot exceed 100.");
+      return;
+    }
+
     try {
       const payload = {
         authenticated: true,
@@ -648,9 +657,19 @@ function Round_Admin() {
                     <input
                       className="input"
                       type="number"
+                      min="0"
+                      max="100"
                       placeholder="e.g., 10"
                       value={newRound.maxParticipants}
-                      onChange={(e) => setNewRound({ ...newRound, maxParticipants: e.target.value })}
+                      onChange={(e) => {
+                        let value = parseInt(e.target.value, 10);
+                        if(value < 0) value = 0;
+                        if(value > 100) value = 100;
+                        setNewRound({ ...newRound, maxParticipants: value });
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === '-' || e.key === 'e') e.preventDefault();
+                      }}
                     />
                   </div>
                   <div className="form-group">
@@ -658,9 +677,19 @@ function Round_Admin() {
                     <input
                       className="input"
                       type="number"
+                      min="0"
+                      max="100"
                       placeholder="Default: 20"
                       value={newRound.orderCapacity}
-                      onChange={(e) => setNewRound({ ...newRound, orderCapacity: e.target.value })}
+                      onChange={(e) => {
+                        let value = parseInt(e.target.value, 10);
+                        if(value < 0) value = 0;
+                        if(value > 100) value = 100;
+                        setNewRound({ ...editRoundData, orderCapacity: e.target.value });
+                      }}
+                      onKeyDown={(e) => {
+                        if(e.key === '-' || e.key === 'e') e.preventDefault();
+                      }}
                     />
                   </div>
                 </div>
@@ -853,8 +882,18 @@ function Round_Admin() {
                       <input
                         className="input"
                         type="number"
+                        min="0"
+                        max="100"
                         value={editRoundData.maxParticipants}
-                        onChange={(e) => setEditRoundData({ ...editRoundData, maxParticipants: e.target.value })}
+                        onChange={(e) => {
+                          let value = parseInt(e.target.value, 10);
+                          if(value < 0) value = 0;
+                          if(value > 100) value = 100;
+                          setEditRoundData({ ...editRoundData, maxParticipants: value });
+                        }}
+                        onKeyDown={(e) => {
+                          if(e.key === '-' || e.key === 'e') e.preventDefault();
+                        }}
                       />
                     </div>
                     <div className="form-group">
@@ -862,8 +901,18 @@ function Round_Admin() {
                       <input
                         className="input"
                         type="number"
+                        min="0"
+                        max="100"
                         value={editRoundData.orderCapacity}
-                        onChange={(e) => setEditRoundData({ ...editRoundData, orderCapacity: e.target.value })}
+                        onChange={(e) => {
+                          let value = parseInt(e.target.value, 10);
+                          if(value < 0) value = 0;
+                          if(value > 100) value = 100;
+                          setEditRoundData({ ...editRoundData, orderCapacity: e.target.value });
+                        }}
+                        onKeyDown={(e) => {
+                          if(e.key === '-' || e.key === 'e') e.preventDefault();
+                        }}
                       />
                     </div>
                   </div>
