@@ -34,6 +34,7 @@ function Round_Admin() {
     teamLeadId: "",
     clinicianId: ""
   });
+  const today = new Date().toISOString().slice(0, 16);
   const [message, setMessage] = useState("");
 
   const [modalOpen, setModalOpen] = useState(false);
@@ -103,6 +104,8 @@ function Round_Admin() {
 
   // Create round
   const createRound = async () => {
+
+    // Error messages for inputs
     if(newRound.maxParticipants < 5) {
       setMessage("Minimum participants must be at least 5.");
       return;
@@ -111,11 +114,23 @@ function Round_Admin() {
       setMessage("Maximum participants cannot exceed 100.");
       return;
     }
-
     if(newRound.orderCapacity > 100) {
       setMessage("Maximum orders cannot exceed 100.");
       return;
     }
+
+    const start = new Date(newRound.startTime);
+    const end = new Date(newRound.endTime);
+    const now = new Date();
+    if(start < now) {
+      setMessage("Rounds cannot be scheduled in the past.");
+      return;
+    }
+    if(start > end) {
+      setMessage("End time must be after start time");
+      return;
+    }
+
 
     try {
       const payload = {
@@ -278,6 +293,17 @@ function Round_Admin() {
 
     if(editRoundData.orderCapacity > 100) {
       setEditMessage("Maximum orders cannot exceed 100.");
+      return;
+    }
+    const start = new Date(editRoundData.startTime);
+    const end = new Date(editRoundData.endTime);
+    const now = new Date();
+    if(start < now) {
+      setEditMessage("Rounds cannot be scheduled in the past.");
+      return;
+    }
+    if(start > end) {
+      setEditMessage("End time must be after start time");
       return;
     }
 
@@ -649,6 +675,7 @@ function Round_Admin() {
                       className="input"
                       type="datetime-local"
                       value={newRound.startTime}
+                      min = {today}
                       onChange={(e) => setNewRound({ ...newRound, startTime: e.target.value })}
                     />
                   </div>
@@ -658,6 +685,7 @@ function Round_Admin() {
                       className="input"
                       type="datetime-local"
                       value={newRound.endTime}
+                      min = {today}
                       onChange={(e) => setNewRound({ ...newRound, endTime: e.target.value })}
                     />
                   </div>
@@ -873,6 +901,7 @@ function Round_Admin() {
                         className="input"
                         type="datetime-local"
                         value={editRoundData.startTime}
+                        min = {today}
                         onChange={(e) => setEditRoundData({ ...editRoundData, startTime: e.target.value })}
                       />
                     </div>
@@ -882,6 +911,7 @@ function Round_Admin() {
                         className="input"
                         type="datetime-local"
                         value={editRoundData.endTime}
+                        min = {today}
                         onChange={(e) => setEditRoundData({ ...editRoundData, endTime: e.target.value })}
                       />
                     </div>

@@ -167,8 +167,21 @@ public class AdminRoundsController {
                     throw new IllegalArgumentException("Start time and end time are required");
                 }
 
-                round.setStartTime(LocalDateTime.parse(startTimeStr));
-                round.setEndTime(LocalDateTime.parse(endTimeStr));
+                LocalDateTime startTime = LocalDateTime.parse(startTimeStr);
+                LocalDateTime endTime = LocalDateTime.parse(endTimeStr);
+
+                // Prevent scheduling rounds in the past
+                if (startTime.isBefore(LocalDateTime.now())) {
+                    throw new IllegalArgumentException("Cannot schedule a round in the past");
+                }
+
+                // Ensure end time is after start time
+                if (endTime.isBefore(startTime)) {
+                    throw new IllegalArgumentException("End time must be after start time");
+                }
+
+                round.setStartTime(startTime);
+                round.setEndTime(endTime);
 
                 round.setLocation((String) requestData.get("location"));
                 round.setMaxParticipants((Integer) requestData.get("maxParticipants"));
@@ -260,12 +273,29 @@ public class AdminRoundsController {
                 if (requestData.containsKey("description")) {
                     existingRound.setDescription((String) requestData.get("description"));
                 }
+                LocalDateTime startTime = existingRound.getStartTime();
+                LocalDateTime endTime = existingRound.getEndTime();
+
                 if (requestData.containsKey("startTime")) {
-                    existingRound.setStartTime(LocalDateTime.parse((String) requestData.get("startTime")));
+                    startTime = LocalDateTime.parse((String) requestData.get("startTime"));
                 }
+
                 if (requestData.containsKey("endTime")) {
-                    existingRound.setEndTime(LocalDateTime.parse((String) requestData.get("endTime")));
+                    endTime = LocalDateTime.parse((String) requestData.get("endTime"));
                 }
+
+                // Prevent past rounds
+                if (startTime.isBefore(LocalDateTime.now())) {
+                    throw new IllegalArgumentException("Cannot schedule a round in the past");
+                }
+
+                // Ensure valid range
+                if (endTime.isBefore(startTime)) {
+                    throw new IllegalArgumentException("End time must be after start time");
+                }
+                existingRound.setStartTime(startTime);
+                existingRound.setEndTime(endTime);
+
                 if (requestData.containsKey("location")) {
                     existingRound.setLocation((String) requestData.get("location"));
                 }
