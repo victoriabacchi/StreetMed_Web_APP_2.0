@@ -18,6 +18,7 @@ const AdminOrders = ({ userData }) => {
   const [selectedOrderForAssign, setSelectedOrderForAssign] = useState(null);
   const [selectedRoundId, setSelectedRoundId] = useState('');
   const [unassignedOrders, setUnassignedOrders] = useState([]);
+  const [assignError, setAssignError] = useState('');
   
   // Order Detail Modal State
   const [detailModalOpen, setDetailModalOpen] = useState(false);
@@ -160,6 +161,27 @@ const AdminOrders = ({ userData }) => {
 
   // Assign order to a round
   const assignOrderToRound = async () => {
+
+    if (!selectedOrderForAssign) return;
+
+    const selectedRound = availableRounds.find(r => r.roundId === parseInt(selectedRoundId));
+
+    if(selectedRound) {
+      const currentOrders = selectedRound.currentOrderCount || 0;
+      const maxOrders = selectedRound.orderCapacity || 20;
+      if(currentOrders >= maxOrders) {
+        setAssignError(`This round is full. Maximum orders allowed: ${maxOrders}`);
+        return;
+      }
+
+      if(currentOrders < 0) {
+        setAssignError("Order count cannot be negative.");
+        return;
+      }
+    }
+
+    setAssignError('');
+
     if (!selectedOrderForAssign) return;
     
     try {
@@ -690,6 +712,11 @@ const AdminOrders = ({ userData }) => {
                 value={selectedRoundId} 
                 onChange={e => setSelectedRoundId(e.target.value)}
               >
+                {assignError && (
+                  <div className="validation-error">
+                    {assignError}
+                  </div>
+                )}
                 <option value="">-- Unassign from Round --</option>
                 {availableRounds.map(round => (
                   <option key={round.roundId} value={round.roundId}>
@@ -999,6 +1026,15 @@ const AdminOrders = ({ userData }) => {
           .order-detail-actions .manage-btn {
             width: 100%;
           }
+        }
+        .validation-error {
+          margin-top: 10px;
+          padding: 8px 12px;
+          border-radius: 6px;
+          background-color: rgba(244, 67, 54, 0.15);
+          border: 1px solid #f44336;
+          color: #ffb3b3;
+          font-size: 13px;
         }
       `}</style>
     </div>

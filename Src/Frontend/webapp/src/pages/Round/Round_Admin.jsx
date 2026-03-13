@@ -30,7 +30,7 @@ function Round_Admin() {
     endTime: "",
     location: "",
     maxParticipants: "",
-    orderCapacity: "20",
+    orderCapacity: "",
     teamLeadId: "",
     clinicianId: ""
   });
@@ -43,6 +43,7 @@ function Round_Admin() {
   const [modalRoundDetails, setModalRoundDetails] = useState(null);
   const [roundOrders, setRoundOrders] = useState([]);
   const [editRoundData, setEditRoundData] = useState(null);
+  const [editMessage, setEditMessage] = useState("");
 
   // Format datetime for input fields
   const formatDatetimeLocal = (dt) => {
@@ -102,6 +103,20 @@ function Round_Admin() {
 
   // Create round
   const createRound = async () => {
+    if(newRound.maxParticipants < 5) {
+      setMessage("Minimum participants must be at least 5.");
+      return;
+    }
+    if(newRound.maxParticipants > 100) {
+      setMessage("Maximum participants cannot exceed 100.");
+      return;
+    }
+
+    if(newRound.orderCapacity > 100) {
+      setMessage("Maximum orders cannot exceed 100.");
+      return;
+    }
+
     try {
       const payload = {
         authenticated: true,
@@ -114,11 +129,11 @@ function Round_Admin() {
         maxParticipants: parseInt(newRound.maxParticipants, 10),
         orderCapacity: parseInt(newRound.orderCapacity, 10) || 20
       };
-      if (newRound.teamLeadId.trim() !== "") {
+      if (!newRound.teamLeadId || newRound.teamLeadId.trim() !== "") {
         const tid = parseInt(newRound.teamLeadId, 10);
         if (!isNaN(tid)) payload.teamLeadId = tid;
       }
-      if (newRound.clinicianId.trim() !== "") {
+      if (!newRound.clinicianId || newRound.clinicianId.trim() !== "") {
         const cid = parseInt(newRound.clinicianId, 10);
         if (!isNaN(cid)) payload.clinicianId = cid;
       }
@@ -251,6 +266,21 @@ function Round_Admin() {
 
   // Update round
   const updateRoundFromModal = async () => {
+    setEditMessage("");
+    if(editRoundData.maxParticipants < 5) {
+      setEditMessage("Minimum participants must be at least 5.");
+      return;
+    }
+    if(editRoundData.maxParticipants > 100) {
+      setEditMessage("Maximum participants cannot exceed 100.");
+      return;
+    }
+
+    if(editRoundData.orderCapacity > 100) {
+      setEditMessage("Maximum orders cannot exceed 100.");
+      return;
+    }
+
     try {
       const payload = {
         authenticated: true,
@@ -648,9 +678,16 @@ function Round_Admin() {
                     <input
                       className="input"
                       type="number"
+                      min="0"
+                      max="100"
                       placeholder="e.g., 10"
-                      value={newRound.maxParticipants}
-                      onChange={(e) => setNewRound({ ...newRound, maxParticipants: e.target.value })}
+                      value={newRound.maxParticipants || ""}
+                      onChange={(e) => {
+                        setNewRound({ ...newRound, maxParticipants: e.target.value });
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === '-' || e.key === 'e') e.preventDefault();
+                      }}
                     />
                   </div>
                   <div className="form-group">
@@ -658,9 +695,16 @@ function Round_Admin() {
                     <input
                       className="input"
                       type="number"
+                      min="0"
+                      max="100"
                       placeholder="Default: 20"
-                      value={newRound.orderCapacity}
-                      onChange={(e) => setNewRound({ ...newRound, orderCapacity: e.target.value })}
+                      value={newRound.orderCapacity || ""}
+                      onChange={(e) => {
+                        setNewRound({ ...newRound, orderCapacity: e.target.value });
+                      }}
+                      onKeyDown={(e) => {
+                        if(e.key === '-' || e.key === 'e') e.preventDefault();
+                      }}
                     />
                   </div>
                 </div>
@@ -744,6 +788,10 @@ function Round_Admin() {
             </div>
 
             <div className="modal-body">
+              {/* EDIT MESSAGE */}
+              {editMessage && (
+                <p className="error-text">{editMessage}</p>
+              )}
               {/* DETAILS TAB */}
               {modalTab === "details" && (
                 <div className="details-grid">
@@ -796,7 +844,7 @@ function Round_Admin() {
                   </div>
                 </div>
               )}
-
+              
               {/* EDIT TAB */}
               {modalTab === "edit" && editRoundData && (
                 <div className="edit-form">
@@ -853,8 +901,16 @@ function Round_Admin() {
                       <input
                         className="input"
                         type="number"
-                        value={editRoundData.maxParticipants}
-                        onChange={(e) => setEditRoundData({ ...editRoundData, maxParticipants: e.target.value })}
+                        min="0"
+                        max="100"
+                        value={editRoundData.maxParticipants || ""}
+                        onChange={(e) => {
+                          setEditRoundData({ ...editRoundData, maxParticipants: e.target.value });
+                          setEditMessage("");
+                        }}
+                        onKeyDown={(e) => {
+                          if(e.key === '-' || e.key === 'e') e.preventDefault();
+                        }}
                       />
                     </div>
                     <div className="form-group">
@@ -862,8 +918,16 @@ function Round_Admin() {
                       <input
                         className="input"
                         type="number"
-                        value={editRoundData.orderCapacity}
-                        onChange={(e) => setEditRoundData({ ...editRoundData, orderCapacity: e.target.value })}
+                        min="0"
+                        max="100"
+                        value={editRoundData.orderCapacity || ""}
+                        onChange={(e) => {
+                          setEditRoundData({ ...editRoundData, orderCapacity: e.target.value });
+                          setEditMessage("");
+                        }}
+                        onKeyDown={(e) => {
+                          if(e.key === '-' || e.key === 'e') e.preventDefault();
+                        }}
                       />
                     </div>
                   </div>
