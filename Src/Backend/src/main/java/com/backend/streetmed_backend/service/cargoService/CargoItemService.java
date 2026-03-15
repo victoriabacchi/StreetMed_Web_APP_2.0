@@ -30,6 +30,10 @@ public class CargoItemService {
     }
 
     public CargoItem createItem(CargoItem item, MultipartFile image) throws IOException {
+        //require category validation
+        if(item.getCategory() == null || item.getCategory().trim().isEmpty()) {
+            throw new IllegalArgumentException("Category is required");
+        }
         // Validate item name uniqueness
         if (cargoItemRepository.existsByNameIgnoreCase(item.getName())) {
             throw new RuntimeException("An item with this name already exists");
@@ -79,6 +83,9 @@ public class CargoItemService {
             existingItem.setDescription(updatedItem.getDescription());
         }
         if (updatedItem.getCategory() != null) {
+            if(updatedItem.getCategory().trim().isEmpty()) {
+                throw new IllegalArgumentException("Category is required");
+            }
             existingItem.setCategory(updatedItem.getCategory());
         }
         if (updatedItem.getQuantity() != null && updatedItem.getQuantity() >= 0) {
@@ -210,7 +217,7 @@ public class CargoItemService {
 
     // Query methods
     public List<CargoItem> getAllItems() {
-        return cargoItemRepository.findAll();
+        return cargoItemRepository.findAllByOrderByCategoryAscNameAsc();
     }
 
     public List<CargoItem> getAvailableItems() {

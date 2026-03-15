@@ -38,10 +38,12 @@ const Guest = ({ onLogout }) => {
   const [showItemDetailModal, setShowItemDetailModal] = useState(false);
   const [selectedSize, setSelectedSize] = useState("");
   const [selectedQuantity, setSelectedQuantity] = useState(1);
+  const [selectedItemDescription, setSelectedItemDescription] = useState("");
   
   const [showCustomItemModal, setShowCustomItemModal] = useState(false);
   const [customItemName, setCustomItemName] = useState("");
   const [customItemQuantity, setCustomItemQuantity] = useState(1);
+  const [customItemDescription, setCustomItemDescription] = useState("");
 
   const itemsSectionRef = useRef(null);
 
@@ -119,7 +121,7 @@ const Guest = ({ onLogout }) => {
       : selectedItem.name;
 
     const newCart = [...cart];
-    const existingIndex = newCart.findIndex((c) => c.displayName === displayName);
+    const existingIndex = newCart.findIndex((c) => c.displayName === displayName && c.requestDescription === selectedItemDescription);
 
     if (existingIndex >= 0) {
       newCart[existingIndex].quantity += selectedQuantity;
@@ -131,10 +133,12 @@ const Guest = ({ onLogout }) => {
         imageId: selectedItem.imageId,
         description: selectedItem.description,
         category: selectedItem.category,
-        size: selectedSize
+        size: selectedSize,
+        requestDescription: selectedItemDescription
       });
     }
     setCart(newCart);
+    setSelectedItemDescription("");
     closeItemDetailModal();
   };
 
@@ -163,13 +167,15 @@ const Guest = ({ onLogout }) => {
         name: itemName,
         displayName: itemName,
         quantity: quantity,
-        isCustom: true
+        isCustom: true,
+        requestDescription: customItemDescription
       });
     }
     setCart(newCart);
     setShowCustomItemModal(false);
     setCustomItemName("");
     setCustomItemQuantity(1);
+    setCustomItemDescription("");
   };
 
   // Cart Management
@@ -239,7 +245,8 @@ const Guest = ({ onLogout }) => {
           itemName: c.name,
           quantity: c.quantity,
           size: c.size || null,
-          isCustom: c.isCustom || false
+          isCustom: c.isCustom || false,
+          description: c.requestDescription || null
         })),
         authenticated: false,
         userId: -1
@@ -385,11 +392,18 @@ const Guest = ({ onLogout }) => {
                             />
                           ) : (
                             <div className="no-image-placeholder">No Image</div>
-                          )}
+                          )})}
                       </div>
                       <h4>{item.name}</h4>
-                      {selectedCategory === "All" && (<p className="category">{item.category}</p>)}
-                      <p className="stock">In Stock: {item.quantity}</p>
+                      <p className="category">{item.category}</p>
+                      <p className="stock">
+                        {item.quantity == 0
+                        ? <span className="status-badge status-out">Out of Stock</span>
+                        : item.quantity <= 5
+                        ? <span className="status-badge status-limited">Limited</span>
+                        : <span className="status-badge status-available">Available</span>
+                        }
+                      </p>
                     </div>
                   ))
                 )}
@@ -400,7 +414,7 @@ const Guest = ({ onLogout }) => {
 
       {/* ---------- ITEM DETAIL MODAL ---------- */}
       {showItemDetailModal && selectedItem && (
-        <div className="modal-overlay">
+        <div className="modal-overlay">{selectedCategory === "All" && (
           <div className="modal-content feedback-card"> {/* Reusing feedback styling for consistency */}
              <h2 style={{color: '#fff', textAlign: 'center'}}>{selectedItem.name}</h2>
              
@@ -425,7 +439,9 @@ const Guest = ({ onLogout }) => {
                         onChange={(e) => setSelectedSize(e.target.value)}
                     >
                         {Object.entries(selectedItem.sizeQuantities).map(([s, q]) => (
-                            <option key={s} value={s}>{s} (Avail: {q})</option>
+                            <option key={s} value={s}>
+                              {s} — {q === 0 ? 'Out of Stock' : q <= 5 ? 'Limited' : 'Available'}
+                              </option>
                         ))}
                     </select>
                 </div>
@@ -439,6 +455,14 @@ const Guest = ({ onLogout }) => {
                     style={{width: '100%', padding: '10px', borderRadius: '8px'}}
                     value={selectedQuantity}
                     onChange={(e) => setSelectedQuantity(Number(e.target.value))}
+                />
+             </div>
+             <div style={{marginBottom: '20px'}}>
+                <label style={{color: '#fff', display: 'block', marginBottom: '5px'}}>Notes (optional):</label>
+                <textarea
+                    value={selectedItemDescription}
+                    onChange={e => setSelectedItemDescription(e.target.value)}
+                    style={{width: '100%', padding: '10px', borderRadius: '8px', minHeight: '60px'}}
                 />
              </div>
 
@@ -492,6 +516,23 @@ const Guest = ({ onLogout }) => {
                       border: '1px solid #3a5070',
                       backgroundColor: '#fff',
                       fontSize: '14px',
+                      boxSizing: 'border-box'
+                    }}
+                />
+            </div>
+            <div style={{marginBottom: '20px'}}>
+                <label style={{color: '#fff', display: 'block', marginBottom: '8px', fontWeight: '600'}}>Notes (optional):</label>
+                <textarea
+                    value={customItemDescription}
+                    onChange={e => setCustomItemDescription(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '12px',
+                      borderRadius: '8px',
+                      border: '1px solid #3a5070',
+                      backgroundColor: '#fff',
+                      fontSize: '14px',
+                      minHeight: '60px',
                       boxSizing: 'border-box'
                     }}
                 />
@@ -556,6 +597,11 @@ const Guest = ({ onLogout }) => {
                                     <strong style={{color: '#fff'}}>{c.displayName || c.name}</strong>
                                     {c.isCustom && <span style={{color: '#ff9800', fontSize: '12px', marginLeft: '5px'}}>(Custom)</span>}
                                     <div style={{color: '#ccc', fontSize: '13px'}}>{c.category}</div>
+                                    {c.requestDescription && (
+                                      <div style={{color: '#aaa', fontSize: '12px', marginTop: '4px'}}>
+                                        Notes: {c.requestDescription}
+                                      </div>
+                                    )}
                                 </div>
                                 <div style={{display: 'flex', alignItems: 'center', gap: '10px'}}>
                                     <input 
@@ -661,8 +707,11 @@ const Guest = ({ onLogout }) => {
               <div style={{background: '#0f1c38', padding: '10px', borderRadius: '8px', margin: '15px 0'}}>
                   <p style={{color: '#f6b800', margin: '0 0 5px 0'}}>Items:</p>
                   {currentOrder.items.map((it, idx) => (
-                      <div key={idx} style={{color: '#ccc', fontSize: '14px'}}>
+                      <div key={idx} style={{color: '#ccc', fontSize: '14px', marginBottom: it.requestDescription ? '4px' : '0'}}>
                          - {it.displayName || it.name} x {it.quantity}
+                         {it.requestDescription && (
+                           <div style={{fontSize: '12px', color: '#aaa', marginLeft: '12px'}}>Notes: {it.requestDescription}</div>
+                         )}
                       </div>
                   ))}
               </div>

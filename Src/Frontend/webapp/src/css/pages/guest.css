@@ -477,6 +477,28 @@ a[href*="custom"]:hover {
   font-weight: 500;
 }
 
+/* Stock status */
+.status-badge {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+
+.status-available {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.status-limited {
+  background-color: #fff3cd;
+  color: #856404;
+}
+
+.status-out {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
 /* ===========================================
    ITEMS GRID
    =========================================== */

@@ -445,3 +445,31 @@
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-bold);
 }
+
+/* Dropdowns styled like secondary buttons */
+.select-btn {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  padding: 10px 20px;
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-bold);
+  border-radius: var(--border-radius-pill);
+  border: none;
+  background-color: var(--primary-gold);
+  color: var(--bg-dark-primary);
+  cursor: pointer;
+  transition: background-color var(--transition-normal);
+}
+
+.select-btn:hover {
+  background-color: var(--primary-gold-hover);
+}
+
+/* Down arrow indicator */x
+.select-btn::after {
+  content: "▼";
+  position: absolute;
+  right: 12px;
+  pointer-events: none;
+}
