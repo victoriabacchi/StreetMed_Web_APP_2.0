@@ -395,7 +395,9 @@ const Guest = ({ onLogout }) => {
                           )}
                       </div>
                       <h4>{item.name}</h4>
-                      <p className="category">{item.category}</p>
+                      {selectedCategory === "All" && (
+                        <p className="category">{item.category}</p>
+                      )}
                       <p className="stock">
                         {item.quantity == 0
                         ? <span className="status-badge status-out">Out of Stock</span>
