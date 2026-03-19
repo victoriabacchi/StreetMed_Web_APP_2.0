@@ -392,10 +392,12 @@ const Guest = ({ onLogout }) => {
                             />
                           ) : (
                             <div className="no-image-placeholder">No Image</div>
-                          )})}
+                          )}
                       </div>
                       <h4>{item.name}</h4>
-                      <p className="category">{item.category}</p>
+                      {selectedCategory === "All" && (
+                        <p className="category">{item.category}</p>
+                      )}
                       <p className="stock">
                         {item.quantity == 0
                         ? <span className="status-badge status-out">Out of Stock</span>
@@ -414,7 +416,7 @@ const Guest = ({ onLogout }) => {
 
       {/* ---------- ITEM DETAIL MODAL ---------- */}
       {showItemDetailModal && selectedItem && (
-        <div className="modal-overlay">{selectedCategory === "All" && (
+        <div className="modal-overlay">
           <div className="modal-content feedback-card"> {/* Reusing feedback styling for consistency */}
              <h2 style={{color: '#fff', textAlign: 'center'}}>{selectedItem.name}</h2>
              
