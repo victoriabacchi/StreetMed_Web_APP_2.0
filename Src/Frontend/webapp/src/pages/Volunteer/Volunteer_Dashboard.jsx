@@ -846,6 +846,35 @@ const Volunteer_Dashboard = ({ userData, onLogout }) => {
             </div>
           </div>
         )}
+
+        {/* Log Interaction Button - Bottom Right */}
+        <button
+          style={{
+            position: 'fixed',
+            bottom: '30px',
+            right: '30px',
+            backgroundColor: '#003e7e',
+            color: '#ffffff',
+            border: 'none',
+            borderRadius: '6px',
+            padding: '12px 24px',
+            cursor: 'pointer',
+            fontSize: '14px',
+            fontWeight: '600',
+            fontFamily: "'Courier New', Courier, monospace",
+            transition: 'background-color 0.2s ease',
+            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)',
+            zIndex: '1000'
+          }}
+          onClick={() => {
+            // GPS location logging will be implemented here
+            console.log('Log Interaction clicked - GPS location:', new Date().toISOString());
+          }}
+          onMouseOver={(e) => e.target.style.backgroundColor = '#002d5f'}
+          onMouseOut={(e) => e.target.style.backgroundColor = '#003e7e'}
+        >
+          📍 Log Interaction
+        </button>
       </div>
     </>
   );
