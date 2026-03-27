@@ -514,89 +514,6 @@ const Volunteer_Dashboard = ({ userData, onLogout }) => {
     </div>
   );
 
-  // Handle GPS logging
-  const handleLogInteraction = async () => {
-    try {
-      // Request GPS permission
-      if (!navigator.geolocation) {
-        alert("Geolocation is not supported by your browser");
-        return;
-      }
-
-      // Show loading state
-      const button = event.currentTarget;
-      const originalText = button.textContent;
-      button.textContent = "📍 Getting location...";
-      button.disabled = true;
-
-      navigator.geolocation.getCurrentPosition(
-        async (position) => {
-          const { latitude, longitude, accuracy } = position.coords;
-          const timestamp = new Date().toISOString();
-
-          try {
-            // Send GPS data to backend
-            const response = await secureAxios.post('/api/interactions/log', {
-              latitude,
-              longitude,
-              accuracy,
-              authenticated: true,
-              userId: userData.userId,
-              userRole: 'VOLUNTEER',
-              notes: `Logged at ${timestamp}`
-            }, {
-              headers: {
-                'User-Id': userData.userId,
-                'User-Role': 'VOLUNTEER',
-                'Authentication-Status': 'true'
-              }
-            });
-
-            if (response.data.status === 'success') {
-              alert(`✓ Location logged successfully!\nLat: ${latitude.toFixed(6)}\nLon: ${longitude.toFixed(6)}\nTime: ${new Date(timestamp).toLocaleTimeString()}`);
-              console.log('GPS Interaction logged:', response.data);
-            } else {
-              alert('Failed to log location: ' + (response.data.message || 'Unknown error'));
-            }
-          } catch (error) {
-            console.error("Error logging interaction to backend:", error);
-            alert('Error logging location: ' + (error.response?.data?.message || error.message));
-          } finally {
-            button.textContent = originalText;
-            button.disabled = false;
-          }
-        },
-        (error) => {
-          button.textContent = originalText;
-          button.disabled = false;
-          
-          let errorMessage = "Failed to get GPS location";
-          switch (error.code) {
-            case error.PERMISSION_DENIED:
-              errorMessage = "GPS permission denied. Please enable location access in your browser settings.";
-              break;
-            case error.POSITION_UNAVAILABLE:
-              errorMessage = "GPS location information is unavailable.";
-              break;
-            case error.TIMEOUT:
-              errorMessage = "GPS request timed out. Please try again.";
-              break;
-          }
-          alert(errorMessage);
-          console.error("Geolocation error:", error);
-        },
-        {
-          enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 0
-        }
-      );
-    } catch (err) {
-      console.error("Error in handleLogInteraction:", err);
-      alert("Unexpected error: " + err.message);
-    }
-  };
-
   // Render order card
   const renderOrderCard = (assignment, isCompleted = false) => (
     <div 
@@ -949,7 +866,10 @@ const Volunteer_Dashboard = ({ userData, onLogout }) => {
             boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)',
             zIndex: '1000'
           }}
-          onClick={handleLogInteraction}
+          onClick={() => {
+            // GPS location logging will be implemented here
+            console.log('Log Interaction clicked - GPS location:', new Date().toISOString());
+          }}
           onMouseOver={(e) => e.target.style.backgroundColor = '#002d5f'}
           onMouseOut={(e) => e.target.style.backgroundColor = '#003e7e'}
         >
