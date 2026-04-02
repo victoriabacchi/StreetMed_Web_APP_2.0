@@ -197,6 +197,12 @@ const Volunteer_Dashboard = ({ userData, onLogout }) => {
   const [showPastRounds, setShowPastRounds] = useState(false);
   const [showCompletedOrders, setShowCompletedOrders] = useState(false);
 
+  // Special Order Request states
+  const [specialName, setSpecialName] = useState("");
+  const [specialItems, setSpecialItems] = useState("");
+  const [specialDetails, setSpecialDetails] = useState("");
+  const [isSubmittingSpecialOrder, setIsSubmittingSpecialOrder] = useState(false);
+
   // Load volunteer's assignments
   const loadMyAssignments = useCallback(async () => {
     if (!userData || !userData.userId) return;
@@ -368,6 +374,50 @@ const Volunteer_Dashboard = ({ userData, onLogout }) => {
   const closeOrderFullView = () => {
     setOrderModalOpen(false);
     setSelectedOrder(null);
+  };
+
+  // Submit special order request
+  const submitSpecialOrder = async () => {
+    if (!specialName.trim() || !specialItems.trim()) {
+      alert("Please fill in both Name and Items Needed fields.");
+      return;
+    }
+
+    setIsSubmittingSpecialOrder(true);
+    try {
+      const payload = {
+        authenticated: true,
+        userId: userData.userId,
+        deliveryAddress: "N/A",
+        phoneNumber: "N/A",
+        notes: `Requested for: ${specialName}\nDetails: ${specialDetails}`,
+        items: [
+          {
+            itemName: specialItems,
+            quantity: 1,
+            size: null,
+            isCustom: true
+          }
+        ]
+      };
+
+      const response = await secureAxios.post('/api/orders/create', payload);
+
+      if (response.data.status === "success") {
+        alert("Special order request submitted successfully!");
+        // Clear form
+        setSpecialName("");
+        setSpecialItems("");
+        setSpecialDetails("");
+      } else {
+        alert(response.data.message || "Failed to submit special order request");
+      }
+    } catch (error) {
+      console.error("Error submitting special order:", error);
+      alert(error.response?.data?.message || "Failed to submit special order request");
+    } finally {
+      setIsSubmittingSpecialOrder(false);
+    }
   };
 
   useEffect(() => {
@@ -690,6 +740,125 @@ const Volunteer_Dashboard = ({ userData, onLogout }) => {
               ) : (
                 activeAssignments.map((assignment) => renderOrderCard(assignment, false))
               )}
+            </div>
+          </div>
+
+          {/* Special Order Request */}
+          <div style={{ marginBottom: '30px' }}>
+            <h2><strong>🛒 Special Order Request</strong></h2>
+            <div style={{
+              backgroundColor: '#1a2332',
+              borderRadius: '12px',
+              padding: '20px',
+              border: '1px solid rgba(255, 255, 255, 0.05)',
+              marginBottom: '20px'
+            }}>
+              
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                <div>
+                  <label style={{ 
+                    display: 'block', 
+                    color: '#f6b800', 
+                    fontSize: '14px', 
+                    fontWeight: 'bold',
+                    marginBottom: '5px'
+                  }}>
+                    Name*
+                  </label>
+                  <input
+                    type="text"
+                    value={specialName}
+                    onChange={(e) => setSpecialName(e.target.value)}
+                    placeholder="text"
+                    style={{
+                      width: '100%',
+                      padding: '10px',
+                      borderRadius: '6px',
+                      border: '1px solid rgba(255, 255, 255, 0.2)',
+                      backgroundColor: '#2a3441',
+                      color: '#ffffff',
+                      fontSize: '14px',
+                      fontFamily: "'Courier New', Courier, monospace"
+                    }}
+                  />
+                </div>
+                
+                <div>
+                  <label style={{ 
+                    display: 'block', 
+                    color: '#f6b800', 
+                    fontSize: '14px', 
+                    fontWeight: 'bold',
+                    marginBottom: '5px'
+                  }}>
+                    Items Needed*
+                  </label>
+                  <input
+                    type="text"
+                    value={specialItems}
+                    onChange={(e) => setSpecialItems(e.target.value)}
+                    placeholder="text"
+                    style={{
+                      width: '100%',
+                      padding: '10px',
+                      borderRadius: '6px',
+                      border: '1px solid rgba(255, 255, 255, 0.2)',
+                      backgroundColor: '#2a3441',
+                      color: '#ffffff',
+                      fontSize: '14px',
+                      fontFamily: "'Courier New', Courier, monospace"
+                    }}
+                  />
+                </div>
+                
+                <div>
+                  <label style={{ 
+                    display: 'block', 
+                    color: '#f6b800', 
+                    fontSize: '14px', 
+                    fontWeight: 'bold',
+                    marginBottom: '5px'
+                  }}>
+                    Details/Notes
+                  </label>
+                  <textarea
+                    value={specialDetails}
+                    onChange={(e) => setSpecialDetails(e.target.value)}
+                    placeholder="text"
+                    rows={3}
+                    style={{
+                      width: '100%',
+                      padding: '10px',
+                      borderRadius: '6px',
+                      border: '1px solid rgba(255, 255, 255, 0.2)',
+                      backgroundColor: '#2a3441',
+                      color: '#ffffff',
+                      fontSize: '14px',
+                      fontFamily: "'Courier New', Courier, monospace",
+                      resize: 'vertical'
+                    }}
+                  />
+                </div>
+                
+                <button
+                  onClick={submitSpecialOrder}
+                  disabled={isSubmittingSpecialOrder}
+                  style={{
+                    padding: '12px 24px',
+                    backgroundColor: isSubmittingSpecialOrder ? '#555' : '#ff6b00',
+                    color: '#ffffff',
+                    border: 'none',
+                    borderRadius: '6px',
+                    cursor: isSubmittingSpecialOrder ? 'not-allowed' : 'pointer',
+                    fontSize: '14px',
+                    fontWeight: 'bold',
+                    fontFamily: "'Courier New', Courier, monospace",
+                    alignSelf: 'flex-start'
+                  }}
+                >
+                  {isSubmittingSpecialOrder ? 'Submitting...' : 'Submit Special Order'}
+                </button>
+              </div>
             </div>
           </div>
 
