@@ -1037,7 +1037,12 @@ const Volunteer_Dashboard = ({ userData, onLogout }) => {
           }}
           onClick={() => {
             // GPS location logging will be implemented here
-            console.log('Log Interaction clicked - GPS location:', new Date().toISOString());
+            navigator.geolocation.getCurrentPosition(async (position) => {
+              await secureAxios.post("/api/interactions/log", {
+                latitude: position.coords.latitude,
+                longitude: position.coords.longitude
+              });
+            });
           }}
           onMouseOver={(e) => e.target.style.backgroundColor = '#002d5f'}
           onMouseOut={(e) => e.target.style.backgroundColor = '#003e7e'}
