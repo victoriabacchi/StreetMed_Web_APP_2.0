@@ -36,6 +36,7 @@ function Round_Admin() {
   });
   const today = new Date().toISOString().slice(0, 16);
   const [message, setMessage] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
 
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedRound, setSelectedRound] = useState(null);
@@ -45,6 +46,16 @@ function Round_Admin() {
   const [roundOrders, setRoundOrders] = useState([]);
   const [editRoundData, setEditRoundData] = useState(null);
   const [editMessage, setEditMessage] = useState("");
+
+  // Auto-dismiss success message after 30 seconds
+  useEffect(() => {
+    if (successMessage) {
+      const timer = setTimeout(() => {
+        setSuccessMessage("");
+      }, 30000);
+      return () => clearTimeout(timer);
+    }
+  }, [successMessage]);
 
   // Format datetime for input fields
   const formatDatetimeLocal = (dt) => {
@@ -155,7 +166,7 @@ function Round_Admin() {
 
       const response = await secureAxios.post('/api/admin/rounds/create', payload);
       if (response.data.status === "success") {
-        setMessage("Round created successfully! ID: " + response.data.roundId);
+        setSuccessMessage("Round created successfully! ID: " + response.data.roundId);
         setNewRound({
           title: "",
           description: "",
@@ -540,6 +551,12 @@ function Round_Admin() {
           </button>
         </div>
       </div>
+
+      {successMessage && (
+        <div className="success-banner">
+          <strong>✓ {successMessage}</strong>
+        </div>
+      )}
 
       <h1 className="rounds-title">Rounds Administration</h1>
 
