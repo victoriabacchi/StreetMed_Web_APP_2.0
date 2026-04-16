@@ -93,13 +93,40 @@
 }
 
 /* ===========================================
+   SUCCESS BANNER
+   =========================================== */
+.success-banner {
+  background: linear-gradient(135deg, #1cbd3a 0%, #0fa530 100%);
+  color: white;
+  padding: 16px 20px;
+  margin: 0 0 20px 0;
+  text-align: center;
+  font-weight: 700;
+  font-size: 16px;
+  border-bottom: 4px solid #0a7a1f;
+  box-shadow: 0 2px 8px rgba(28, 189, 58, 0.3);
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* ===========================================
    STATUS MESSAGE
    =========================================== */
 .status-msg {
   text-align: center;
   padding: 10px 16px;
   margin: 0 16px 16px;
-  color: #f6b800;
+  color: #1cbd3a;
   font-size: 14px;
 }
 
