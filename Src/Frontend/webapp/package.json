@@ -10,11 +10,15 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@deck.gl/aggregation-layers": "^9.3.0",
+    "@deck.gl/react": "^9.3.0",
     "@vitejs/plugin-react": "^5.1.2",
     "axios": "^1.13.4",
+    "maplibre-gl": "^5.23.0",
     "react": "^19.2.0",
     "react-calendar": "^6.0.0",
     "react-dom": "^19.2.0",
+    "react-map-gl": "^8.1.1",
     "react-router-dom": "^7.13.0"
   },
   "devDependencies": {
