@@ -163,6 +163,13 @@ const Admin = ({ onLogout, userData }) => {
           >
             <span className="card-text-yellow">View Feedback</span>
           </div>
+
+          <div
+            className="admin-card light-blue"
+            onClick={() => navigate('/heatmap')}
+          >
+            <span className="card-text-blue">Interaction Heatmap</span>
+          </div>
         </section>
 
 

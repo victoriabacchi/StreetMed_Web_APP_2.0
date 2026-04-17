@@ -668,6 +668,9 @@ const Volunteer_Dashboard = ({ userData, onLogout }) => {
           <button className="nav-btn" onClick={() => navigate("/cargo_volunteer")}>
             Cargo
           </button>
+          <button className="nav-btn" onClick={() => navigate("/heatmap")}>
+            📊 Heatmap
+          </button>
           <button className="nav-btn" onClick={onLogout}>
             Logout
           </button>
