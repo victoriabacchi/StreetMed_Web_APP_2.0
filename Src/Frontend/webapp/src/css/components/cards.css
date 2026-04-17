@@ -165,7 +165,7 @@
   align-items: center;
   justify-content: space-between;
   border-radius: var(--border-radius-xxl);
-  padding: 28px 32px;
+  padding: 20px 32px;
   font-size: 19px;
   font-weight: var(--font-weight-medium);
   box-shadow: 2px 3px 6px rgba(0, 0, 0, 0.15);
