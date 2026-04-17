@@ -1,42 +1,17 @@
-import { useEffect, useState, useMemo } from "react";
-import { MapContainer, TileLayer, useMap } from "react-leaflet";
-import L from "leaflet";
-import "leaflet/dist/leaflet.css";
+import { useEffect, useMemo, useState } from "react";
+import DeckGL from "@deck.gl/react";
+import { HeatmapLayer } from "@deck.gl/aggregation-layers";
+import { Map } from "react-map-gl/maplibre";
+import "maplibre-gl/dist/maplibre-gl.css";
 import { secureAxios } from "../../config/axiosConfig";
 
-function HeatLayer({ points }) {
-  const map = useMap();
-  useEffect(() => {
-    if (!map || !points.length) return;
-
-    const circles = points.map(([lat, lng]) =>
-      L.circle([lat, lng], {
-        radius: 15,
-        color: "red",
-        fillColor: "red",
-        fillOpacity: 0.1,
-        stroke: false,
-      }).addTo(map)
-    );
-
-    return () => circles.forEach(c => map.removeLayer(c));
-  }, [map, points]);
-
-  return null;
-}
-
-function FitToPittsburghBounds() {
-  const map = useMap();
-  useEffect(() => {
-    const bounds = L.latLngBounds(
-      [40.36, -80.10],
-      [40.52, -79.86]
-    );
-    map.setMaxBounds(bounds.pad(0.2));
-    map.fitBounds(bounds);
-  }, [map]);
-  return null;
-}
+const PITTSBURGH_VIEW_STATE = {
+  longitude: -79.9959,
+  latitude: 40.4406,
+  zoom: 11.8,
+  pitch: 0,
+  bearing: 0,
+};
 
 export default function InteractionHeatmap() {
   const [interactions, setInteractions] = useState([]);
@@ -51,8 +26,13 @@ export default function InteractionHeatmap() {
           secureAxios.get("/api/interactions"),
           secureAxios.get("/api/interactions/count"),
         ]);
-        setInteractions(pointsRes.data.interactions || []);
-        setTotalCount(countRes.data.count || 0);
+
+        const rawInteractions =
+          pointsRes?.data?.interactions ||
+          (Array.isArray(pointsRes?.data) ? pointsRes.data : []);
+
+        setInteractions(rawInteractions);
+        setTotalCount(Number(countRes?.data?.count ?? rawInteractions.length ?? 0));
       } catch (err) {
         console.error("Failed to load heatmap data:", err);
         setError("Failed to load interaction map data.");
@@ -60,37 +40,76 @@ export default function InteractionHeatmap() {
         setLoading(false);
       }
     };
+
     loadData();
   }, []);
 
-  const heatPoints = useMemo(() => {
+  const heatmapData = useMemo(() => {
     return interactions
-      .filter(p => typeof p.latitude === "number" && typeof p.longitude === "number")
-      .map(p => [p.latitude, p.longitude]);
+      .map((item) => {
+        const latitude = Number(item.latitude);
+        const longitude = Number(item.longitude);
+        const weight = Number(item.intensity ?? 1);
+
+        return {
+          latitude,
+          longitude,
+          weight: Number.isFinite(weight) && weight > 0 ? weight : 1,
+        };
+      })
+      .filter(
+        (item) =>
+          Number.isFinite(item.latitude) &&
+          Number.isFinite(item.longitude)
+      );
   }, [interactions]);
+
+  const layers = useMemo(() => {
+    if (!heatmapData.length) return [];
+
+    return [
+      new HeatmapLayer({
+        id: "interaction-heatmap",
+        data: heatmapData,
+        getPosition: (d) => [d.longitude, d.latitude],
+        getWeight: (d) => d.weight,
+        radiusPixels: 40,
+        intensity: 1,
+        threshold: 0.03,
+        aggregation: "SUM",
+      }),
+    ];
+  }, [heatmapData]);
 
   return (
     <div style={{ padding: "20px" }}>
       <h2>Interaction Heatmap</h2>
       <p>Total interactions: {totalCount}</p>
+
       {loading && <p>Loading map data...</p>}
       {error && <p style={{ color: "red" }}>{error}</p>}
-      <div style={{ height: "600px", width: "100%", borderRadius: "12px", overflow: "hidden" }}>
-        <MapContainer
-          center={[40.4406, -79.9959]}
-          zoom={12}
-          minZoom={11}
-          maxZoom={17}
-          scrollWheelZoom={true}
-          style={{ height: "100%", width: "100%" }}
+
+      <div
+        style={{
+          height: "600px",
+          width: "100%",
+          borderRadius: "12px",
+          overflow: "hidden",
+          border: "1px solid #ddd",
+          position: "relative",
+        }}
+      >
+        <DeckGL
+          initialViewState={PITTSBURGH_VIEW_STATE}
+          controller={true}
+          layers={layers}
+          style={{ width: "100%", height: "100%" }}
         >
-          <TileLayer
-            attribution='&copy; OpenStreetMap contributors'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          <Map
+            mapStyle="https://basemaps.cartocdn.com/gl/positron-gl-style/style.json"
+            style={{ width: "100%", height: "100%" }}
           />
-          <FitToPittsburghBounds />
-          {heatPoints.length > 0 && <HeatLayer points={heatPoints} />}
-        </MapContainer>
+        </DeckGL>
       </div>
     </div>
   );

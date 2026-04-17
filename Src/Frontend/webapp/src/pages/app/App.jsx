@@ -22,7 +22,9 @@ import AdminOrders from "../Admin/Admin_Orders";
 import AdminViewAppli from "../Admin/Admin_ViewAppli";
 import AdminFeedback from "../Admin/Admin_Feedback";
 import CertificateHelper from "../../components/CertificateHelper";
+import InteractionHeatmap from "../Admin/InteractionHeatmap";
 import { checkTLSConnection } from "../../config/axiosConfig";
+
 import '../../index.css'; 
 
 function App({ securityInitialized = false }) {
@@ -226,6 +228,7 @@ function App({ securityInitialized = false }) {
         <Route path="/admin/orders" element={<AdminOrders userData={userData} />} />
         <Route path="/admin/applications" element={<AdminViewAppli userData={userData} />} />
         <Route path="/admin/feedback" element={<AdminFeedback userData={userData} />} />
+        <Route path="/heatmap" element={<InteractionHeatmap />} />
       </Routes>
     </Router>
   );
