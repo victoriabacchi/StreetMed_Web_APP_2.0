@@ -202,6 +202,7 @@ const Volunteer_Dashboard = ({ userData, onLogout }) => {
   const [specialItems, setSpecialItems] = useState("");
   const [specialDetails, setSpecialDetails] = useState("");
   const [isSubmittingSpecialOrder, setIsSubmittingSpecialOrder] = useState(false);
+  const [showPopup, setShowPopup] = useState(false);
 
   // Load volunteer's assignments
   const loadMyAssignments = useCallback(async () => {
@@ -1045,6 +1046,8 @@ const Volunteer_Dashboard = ({ userData, onLogout }) => {
                 latitude: position.coords.latitude,
                 longitude: position.coords.longitude
               });
+              setShowPopup(true);
+              setTimeout(() => setShowPopup(false), 1500);
             });
           }}
           onMouseOver={(e) => e.target.style.backgroundColor = '#002d5f'}
@@ -1052,6 +1055,26 @@ const Volunteer_Dashboard = ({ userData, onLogout }) => {
         >
           📍 Log Interaction
         </button>
+
+        {showPopup && (
+          <div style={{
+            position: 'fixed',
+            bottom: '70px',
+            right: '30px',
+            backgroundColor: '#27ae60',
+            color: '#ffffff',
+            padding: '8px 16px',
+            borderRadius: '6px',
+            fontSize: '14px',
+            fontWeight: 'bold',
+            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)',
+            zIndex: '1001',
+            opacity: showPopup ? 1 : 0,
+            transition: 'opacity 0.5s ease',
+          }}>
+            Interaction logged!
+          </div>
+        )}
       </div>
     </>
   );
