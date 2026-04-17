@@ -121,6 +121,17 @@ button.nav-btn[style*="marginLeft"] {
   background-color: #3498db !important;
 }
 
+/* Heatmap - Purple outline */
+.nav-right-group .nav-btn:nth-child(3) {
+  background-color: transparent !important;
+  color: #ffffff !important;
+  border: 2px solid #8e44ad !important;
+}
+
+.nav-right-group .nav-btn:nth-child(3):hover {
+  background-color: #8e44ad !important;
+}
+
 /* Logout - White outline, red on hover */
 .nav-right-group .nav-btn:last-child {
   background-color: transparent !important;
