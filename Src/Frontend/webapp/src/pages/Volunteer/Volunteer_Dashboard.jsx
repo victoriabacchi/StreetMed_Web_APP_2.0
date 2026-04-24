@@ -1,9 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
-import Calendar from "react-calendar";
-import "react-calendar/dist/Calendar.css";
 import { publicAxios, secureAxios } from "../../config/axiosConfig";
 import { useNavigate } from "react-router-dom";
-import '../../index.css'; 
+import '../../index.css';
 
 // Embedded styles for round cards to prevent CSS conflicts
 const embeddedStyles = {
@@ -26,17 +24,35 @@ const embeddedStyles = {
     position: 'relative',
     marginBottom: '10px',
   },
-  
+
+  // Compact available round card
+  compactRoundCard: {
+    backgroundColor: '#1a2844',
+    borderRadius: '10px',
+    padding: '14px',
+    width: '100%',
+    minHeight: '100px',
+    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)',
+    color: '#ffffff',
+    fontFamily: "'Courier New', Courier, monospace",
+    border: '1px solid rgba(255, 255, 255, 0.1)',
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'space-between',
+    textAlign: 'left',
+    cursor: 'pointer',
+  },
+
   // Confirmed status - add green left border
   roundCardConfirmed: {
     borderLeft: '4px solid #27ae60',
   },
-  
+
   // Waitlisted status - add yellow left border
   roundCardWaitlisted: {
     borderLeft: '4px solid #f6b800',
   },
-  
+
   // Status badge
   statusBadge: {
     display: 'inline-block',
@@ -48,17 +64,17 @@ const embeddedStyles = {
     marginBottom: '8px',
     width: 'fit-content',
   },
-  
+
   statusBadgeConfirmed: {
     backgroundColor: '#27ae60',
     color: '#ffffff',
   },
-  
+
   statusBadgeWaitlisted: {
     backgroundColor: '#f6b800',
     color: '#333333',
   },
-  
+
   // Card title
   cardTitle: {
     color: '#f6b800',
@@ -66,7 +82,7 @@ const embeddedStyles = {
     fontWeight: 'bold',
     margin: '0 0 6px 0',
   },
-  
+
   // Card description
   cardDescription: {
     color: '#cccccc',
@@ -74,7 +90,7 @@ const embeddedStyles = {
     margin: '0 0 8px 0',
     lineHeight: '1.4',
   },
-  
+
   // Card info row
   cardInfoRow: {
     color: '#ffffff',
@@ -84,14 +100,14 @@ const embeddedStyles = {
     alignItems: 'center',
     gap: '6px',
   },
-  
+
   // Card info icon
   cardIcon: {
     fontSize: '14px',
     width: '18px',
     textAlign: 'center',
   },
-  
+
   // Orders count
   ordersCount: {
     color: '#aaaaaa',
@@ -100,7 +116,7 @@ const embeddedStyles = {
     paddingTop: '8px',
     borderTop: '1px solid rgba(255, 255, 255, 0.1)',
   },
-  
+
   // View Details button
   viewDetailsBtn: {
     marginTop: '12px',
@@ -116,20 +132,20 @@ const embeddedStyles = {
     transition: 'background-color 0.2s ease',
     fontFamily: "'Courier New', Courier, monospace",
   },
-  
+
   // Rounds cards container
   roundsCardsContainer: {
     display: 'flex',
     flexWrap: 'wrap',
-    gap: '16px',
+    gap: '12px',
     backgroundColor: '#1a2332',
     borderRadius: '12px',
     boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2)',
-    padding: '20px',
+    padding: '16px',
     border: '1px solid rgba(255, 255, 255, 0.05)',
     marginBottom: '20px',
   },
-  
+
   // Order card
   orderCard: {
     backgroundColor: '#1a2844',
@@ -146,7 +162,7 @@ const embeddedStyles = {
     gap: '6px',
     boxSizing: 'border-box',
   },
-  
+
   // Empty state
   emptyState: {
     padding: '24px',
@@ -156,44 +172,68 @@ const embeddedStyles = {
     width: '100%',
     border: '1px dashed rgba(255, 255, 255, 0.2)',
   },
-  
+
   emptyStateText: {
     color: '#ffffff',
     fontSize: '15px',
     margin: '0 0 8px 0',
   },
-  
+
   emptyStateSubtext: {
     color: '#aaaaaa',
     fontSize: '13px',
     margin: '0',
+  },
+
+  availableRoundsContainer: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '12px',
+    backgroundColor: '#1a2332',
+    borderRadius: '12px',
+    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2)',
+    padding: '16px',
+    border: '1px solid rgba(255, 255, 255, 0.05)',
+    marginBottom: '20px',
   },
 };
 
 const Volunteer_Dashboard = ({ userData, onLogout }) => {
   const navigate = useNavigate();
 
+  // Local storage key scoped per user
+  const hiddenRoundsStorageKey = userData?.userId
+    ? `hiddenAvailableRoundIds_${userData.userId}`
+    : "hiddenAvailableRoundIds";
+
   // Rounds states
+  const [hiddenAvailableRoundIds, setHiddenAvailableRoundIds] = useState(() => {
+    try {
+      const saved = localStorage.getItem("hiddenAvailableRoundIds");
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
   const [myUpcomingRounds, setMyUpcomingRounds] = useState([]);
   const [myPastRounds, setMyPastRounds] = useState([]);
   const [myRoundsError, setMyRoundsError] = useState("");
   const [allUpcomingRounds, setAllUpcomingRounds] = useState([]);
   const [allRoundsError, setAllRoundsError] = useState("");
-  
+  const [fullViewModalOpen, setFullViewModalOpen] = useState(false);
+  const [selectedRoundDetails, setSelectedRoundDetails] = useState(null);
+  const [, setRoundOrders] = useState([]);
+
   // Orders states
   const [myAssignments, setMyAssignments] = useState([]);
   const [ordersError, setOrdersError] = useState("");
   const [isLoadingOrders, setIsLoadingOrders] = useState(false);
-  
-  // Calendar and modals
-  const [selectedDate, setSelectedDate] = useState(new Date());
-  const [roundsForSelectedDate, setRoundsForSelectedDate] = useState([]);
-  const [showRoundsModal, setShowRoundsModal] = useState(false);
-  const [fullViewModalOpen, setFullViewModalOpen] = useState(false);
-  const [selectedRoundDetails, setSelectedRoundDetails] = useState(null);
-  const [, setRoundOrders] = useState([]);
+
+  // Order modal
   const [orderModalOpen, setOrderModalOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
+
+  // Section toggles
   const [showPastRounds, setShowPastRounds] = useState(false);
   const [showCompletedOrders, setShowCompletedOrders] = useState(false);
 
@@ -215,7 +255,7 @@ const Volunteer_Dashboard = ({ userData, onLogout }) => {
           'Authentication-Status': 'true'
         }
       });
-      
+
       if (response.data.status === "success") {
         setMyAssignments(response.data.assignments || []);
       } else {
@@ -238,13 +278,13 @@ const Volunteer_Dashboard = ({ userData, onLogout }) => {
       });
       const d = r.data;
       if (d.status === "success") {
-        const upcoming = (d.upcomingRounds || []).filter(round => 
+        const upcoming = (d.upcomingRounds || []).filter(round =>
           round.status !== 'CANCELLED' && round.status !== 'CANCELED'
         );
-        const past = (d.pastRounds || []).filter(round => 
+        const past = (d.pastRounds || []).filter(round =>
           round.status !== 'CANCELLED' && round.status !== 'CANCELED'
         );
-        
+
         setMyUpcomingRounds(upcoming);
         setMyPastRounds(past);
       } else {
@@ -267,7 +307,7 @@ const Volunteer_Dashboard = ({ userData, onLogout }) => {
       });
       const d = r.data;
       if (d.status === "success") {
-        const nonCancelledRounds = (d.rounds || []).filter(round => 
+        const nonCancelledRounds = (d.rounds || []).filter(round =>
           round.status !== 'CANCELLED' && round.status !== 'CANCELED'
         );
         setAllUpcomingRounds(nonCancelledRounds);
@@ -288,33 +328,21 @@ const Volunteer_Dashboard = ({ userData, onLogout }) => {
         requestedRole
       });
       alert(r.data.message);
-      loadMyRounds();
-      loadAllUpcomingRounds();
-      handleDateClick(selectedDate);
+      await loadMyRounds();
+      await loadAllUpcomingRounds();
+
+      // Refresh modal details if currently open
+      if (selectedRoundDetails?.roundId === roundId) {
+        const refreshed = await publicAxios.get(`/api/rounds/${roundId}`, {
+          params: { authenticated: true, userId: userData.userId, userRole: "VOLUNTEER" }
+        });
+        if (refreshed.data.status === "success") {
+          setSelectedRoundDetails(refreshed.data.round);
+        }
+      }
     } catch (e) {
       alert(e.response?.data?.message || e.message);
     }
-  };
-
-  const handleDateClick = (date) => {
-    setSelectedDate(date);
-    const ds = date.toISOString().split("T")[0];
-    const f = allUpcomingRounds.filter((r) => {
-      const rs = r.startTime.split("T")[0];
-      return rs === ds;
-    });
-    setRoundsForSelectedDate(f);
-    setShowRoundsModal(true);
-  };
-
-  const highlightDates = ({ date, view }) => {
-    if (view !== "month") return null;
-    const ds = date.toISOString().split("T")[0];
-    const f = allUpcomingRounds.some((r) => {
-      const rs = r.startTime.split("T")[0];
-      return rs === ds;
-    });
-    return f ? "highlight-day" : null;
   };
 
   const openFullViewModal = async (roundId) => {
@@ -322,16 +350,29 @@ const Volunteer_Dashboard = ({ userData, onLogout }) => {
       const r = await publicAxios.get(`/api/rounds/${roundId}`, {
         params: { authenticated: true, userId: userData.userId, userRole: "VOLUNTEER" }
       });
+  
       if (r.data.status === "success") {
-        setSelectedRoundDetails(r.data.round);
+        const round = r.data.round;
+        setSelectedRoundDetails(round);
         setFullViewModalOpen(true);
-      }
-      
-      const ordersRes = await publicAxios.get(`/api/rounds/${roundId}/orders`, {
-        params: { authenticated: true, userId: userData.userId, userRole: "VOLUNTEER" }
-      });
-      if (ordersRes.data.status === "success") {
-        setRoundOrders(ordersRes.data.orders || []);
+  
+        // Only try to load orders if user is already signed up
+        if (round.userSignedUp) {
+          try {
+            const ordersRes = await publicAxios.get(`/api/rounds/${roundId}/orders`, {
+              params: { authenticated: true, userId: userData.userId, userRole: "VOLUNTEER" }
+            });
+  
+            if (ordersRes.data.status === "success") {
+              setRoundOrders(ordersRes.data.orders || []);
+            }
+          } catch (ordersError) {
+            console.error("Could not load round orders:", ordersError);
+            setRoundOrders([]);
+          }
+        } else {
+          setRoundOrders([]);
+        }
       }
     } catch (e) {
       alert(e.response?.data?.message || e.message);
@@ -405,7 +446,6 @@ const Volunteer_Dashboard = ({ userData, onLogout }) => {
 
       if (response.data.status === "success") {
         alert("Special order request submitted successfully!");
-        // Clear form
         setSpecialName("");
         setSpecialItems("");
         setSpecialDetails("");
@@ -422,19 +462,37 @@ const Volunteer_Dashboard = ({ userData, onLogout }) => {
 
   useEffect(() => {
     if (!userData || !userData.userId) return;
-    
+
     loadMyRounds();
     loadAllUpcomingRounds();
     loadMyAssignments();
-    
+
     const interval = setInterval(() => {
       loadMyAssignments();
     }, 30000);
-    
-    return () => clearInterval(interval);
-  }, [userData, loadMyRounds, loadAllUpcomingRounds, loadMyAssignments]); 
 
-  const activeAssignments = myAssignments.filter(a => a.status !== 'COMPLETED' && a.status !== 'CANCELLED');
+    return () => clearInterval(interval);
+  }, [userData, loadMyRounds, loadAllUpcomingRounds, loadMyAssignments]);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(hiddenRoundsStorageKey);
+      setHiddenAvailableRoundIds(saved ? JSON.parse(saved) : []);
+    } catch {
+      setHiddenAvailableRoundIds([]);
+    }
+  }, [hiddenRoundsStorageKey]);
+
+  useEffect(() => {
+    localStorage.setItem(
+      hiddenRoundsStorageKey,
+      JSON.stringify(hiddenAvailableRoundIds)
+    );
+  }, [hiddenAvailableRoundIds, hiddenRoundsStorageKey]);
+
+  const activeAssignments = myAssignments.filter(
+    a => a.status !== 'COMPLETED' && a.status !== 'CANCELLED'
+  );
   const completedAssignments = myAssignments.filter(a => a.status === 'COMPLETED');
 
   // Helper to get round card style
@@ -448,6 +506,40 @@ const Volunteer_Dashboard = ({ userData, onLogout }) => {
     return style;
   };
 
+  // Helpers for showing rounds
+  const getVolunteerCapacity = (round) =>
+    round.maxVolunteers ?? round.volunteerCapacity ?? round.maxSignupCount ?? 0;
+
+  const getCurrentVolunteerCount = (round) =>
+    round.currentVolunteerCount ?? round.currentSignupCount ?? 0;
+
+  const getWaitlistCapacity = (round) =>
+    round.waitlistCapacity ?? 0;
+
+  const getWaitlistCount = (round) =>
+    round.currentWaitlistCount ?? 0;
+
+  const isRoundOpenForSignup = (round) => {
+    if (typeof round.openForSignup === "boolean") return round.openForSignup;
+    const capacity = getVolunteerCapacity(round);
+    const current = getCurrentVolunteerCount(round);
+    return capacity > 0 && current < capacity;
+  };
+
+  const isRoundOpenForWaitlist = (round) => {
+    const waitlistCapacity = getWaitlistCapacity(round);
+    const waitlistCount = getWaitlistCount(round);
+    return !isRoundOpenForSignup(round) && waitlistCapacity > waitlistCount;
+  };
+
+  const hideRoundFromDashboard = (roundId) => {
+    setHiddenAvailableRoundIds((prev) => [...new Set([...prev, roundId])]);
+  };
+
+  const unhideAllRounds = () => {
+    setHiddenAvailableRoundIds([]);
+  };
+
   // Helper to get status badge style
   const getStatusBadgeStyle = (status) => {
     let style = { ...embeddedStyles.statusBadge };
@@ -459,63 +551,143 @@ const Volunteer_Dashboard = ({ userData, onLogout }) => {
     return style;
   };
 
+  const availableRounds = allUpcomingRounds
+  .filter((r) => {
+    const isCancelled = r.status === "CANCELLED" || r.status === "CANCELED";
+    const isSignedUp = r.userSignedUp;
+    const isHidden = hiddenAvailableRoundIds.includes(r.roundId);
+
+    const showAsAvailable = isRoundOpenForSignup(r);
+
+    return !isCancelled && !isSignedUp && !isHidden && showAsAvailable;
+  })
+  .sort((a, b) => new Date(a.startTime) - new Date(b.startTime));
+
+  const renderAvailableRoundCard = (r) => {
+    const openForSignup = isRoundOpenForSignup(r);
+  
+    return (
+      <button
+        key={r.roundId}
+        type="button"
+        onClick={() => openFullViewModal(r.roundId)}
+        style={{
+          ...embeddedStyles.compactRoundCard,
+          position: 'relative' // needed for absolute positioning
+        }}
+      >
+        <div>
+          <h3
+            style={{
+              color: '#f6b800',
+              fontSize: '15px',
+              fontWeight: 'bold',
+              margin: '0 0 8px 0'
+            }}
+          >
+            {r.title}
+          </h3>
+  
+          <p
+            style={{
+              color: '#cccccc',
+              fontSize: '12px',
+              margin: 0
+            }}
+          >
+            {new Date(r.startTime).toLocaleDateString('en-US', {
+              weekday: 'short',
+              month: 'short',
+              day: 'numeric'
+            })}{" "}
+            •{" "}
+            {new Date(r.startTime).toLocaleTimeString('en-US', {
+              hour: '2-digit',
+              minute: '2-digit'
+            })}
+          </p>
+        </div>
+  
+        {/* Status badge */}
+        <span
+          style={{
+            fontSize: '11px',
+            fontWeight: 'bold',
+            padding: '4px 8px',
+            borderRadius: '10px',
+            backgroundColor: openForSignup ? '#27ae60' : '#999',
+            color: openForSignup ? '#fff' : '#333',
+            alignSelf: 'flex-start',
+            marginTop: '10px'
+          }}
+        >
+          {openForSignup ? 'OPEN' : 'FULL'}
+        </span>
+  
+        {/* Bottom-right "View →" */}
+        <span
+          style={{
+            position: 'absolute',
+            bottom: '10px',
+            right: '12px',
+            fontSize: '12px',
+            color: '#aaa'
+          }}
+        >
+          View →
+        </span>
+      </button>
+    );
+  };
+
   // Render a single round card with embedded styles
   const renderRoundCard = (r) => (
     <div key={r.roundId} style={getRoundCardStyle(r.signupStatus)}>
-      {/* Status Badge */}
       {r.signupStatus && (
         <span style={getStatusBadgeStyle(r.signupStatus)}>
           {r.signupStatus === 'CONFIRMED' ? '✓ ' : ''}{r.signupStatus}
         </span>
       )}
-      
-      {/* Title */}
+
       <h3 style={embeddedStyles.cardTitle}>{r.title}</h3>
-      
-      {/* Description */}
       <p style={embeddedStyles.cardDescription}>{r.description}</p>
-      
-      {/* Location */}
+
       <div style={embeddedStyles.cardInfoRow}>
         <span style={embeddedStyles.cardIcon}>📍</span>
         <span>{r.location}</span>
       </div>
-      
-      {/* Date */}
+
       <div style={embeddedStyles.cardInfoRow}>
         <span style={embeddedStyles.cardIcon}>📅</span>
         <span>
-          {new Date(r.startTime).toLocaleDateString('en-US', { 
-            weekday: 'short', 
-            month: 'short', 
+          {new Date(r.startTime).toLocaleDateString('en-US', {
+            weekday: 'short',
+            month: 'short',
             day: 'numeric',
             year: 'numeric'
           })}
         </span>
       </div>
-      
-      {/* Time */}
+
       <div style={embeddedStyles.cardInfoRow}>
         <span style={embeddedStyles.cardIcon}>🕐</span>
         <span>
-          {new Date(r.startTime).toLocaleTimeString('en-US', { 
-            hour: '2-digit', 
-            minute: '2-digit' 
-          })} - {new Date(r.endTime).toLocaleTimeString('en-US', { 
-            hour: '2-digit', 
-            minute: '2-digit' 
+          {new Date(r.startTime).toLocaleTimeString('en-US', {
+            hour: '2-digit',
+            minute: '2-digit'
+          })} - {new Date(r.endTime).toLocaleTimeString('en-US', {
+            hour: '2-digit',
+            minute: '2-digit'
           })}
         </span>
       </div>
-      
-      {/* Orders Count */}
+
       <div style={embeddedStyles.ordersCount}>
         <span style={{ color: '#888' }}>Orders: </span>
         <span style={{ color: '#fff' }}>{r.currentOrderCount || 0} / {r.orderCapacity || 20}</span>
       </div>
-      
-      {/* View Details Button */}
-      <button 
+
+      <button
         style={embeddedStyles.viewDetailsBtn}
         onClick={() => openFullViewModal(r.roundId)}
         onMouseOver={(e) => e.target.style.backgroundColor = '#002d5f'}
@@ -531,33 +703,33 @@ const Volunteer_Dashboard = ({ userData, onLogout }) => {
     <div key={r.roundId} style={embeddedStyles.roundCard}>
       <h3 style={embeddedStyles.cardTitle}>{r.title}</h3>
       <p style={embeddedStyles.cardDescription}>{r.description}</p>
-      
+
       <div style={embeddedStyles.cardInfoRow}>
         <span style={embeddedStyles.cardIcon}>📍</span>
         <span>{r.location}</span>
       </div>
-      
+
       <div style={embeddedStyles.cardInfoRow}>
         <span style={embeddedStyles.cardIcon}>📅</span>
         <span>
-          {new Date(r.startTime).toLocaleDateString('en-US', { 
-            weekday: 'short', 
-            month: 'short', 
+          {new Date(r.startTime).toLocaleDateString('en-US', {
+            weekday: 'short',
+            month: 'short',
             day: 'numeric',
             year: 'numeric'
           })}
         </span>
       </div>
-      
+
       <div style={embeddedStyles.cardInfoRow}>
         <span style={embeddedStyles.cardIcon}>🕐</span>
         <span>
-          {new Date(r.startTime).toLocaleTimeString('en-US', { 
-            hour: '2-digit', 
-            minute: '2-digit' 
-          })} - {new Date(r.endTime).toLocaleTimeString('en-US', { 
-            hour: '2-digit', 
-            minute: '2-digit' 
+          {new Date(r.startTime).toLocaleTimeString('en-US', {
+            hour: '2-digit',
+            minute: '2-digit'
+          })} - {new Date(r.endTime).toLocaleTimeString('en-US', {
+            hour: '2-digit',
+            minute: '2-digit'
           })}
         </span>
       </div>
@@ -566,14 +738,14 @@ const Volunteer_Dashboard = ({ userData, onLogout }) => {
 
   // Render order card
   const renderOrderCard = (assignment, isCompleted = false) => (
-    <div 
-      key={assignment.assignmentId} 
+    <div
+      key={assignment.assignmentId}
       style={{
         ...embeddedStyles.orderCard,
-        borderLeft: isCompleted 
-          ? '4px solid #27ae60' 
-          : assignment.status === 'IN_PROGRESS' 
-            ? '4px solid #3498db' 
+        borderLeft: isCompleted
+          ? '4px solid #27ae60'
+          : assignment.status === 'IN_PROGRESS'
+            ? '4px solid #3498db'
             : '4px solid #f39c12'
       }}
     >
@@ -586,7 +758,7 @@ const Volunteer_Dashboard = ({ userData, onLogout }) => {
           ✓ Completed
         </span>
       )}
-      
+
       {!isCompleted && (
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
           <h3 style={{ ...embeddedStyles.cardTitle, margin: 0 }}>Order #{assignment.orderId}</h3>
@@ -602,17 +774,17 @@ const Volunteer_Dashboard = ({ userData, onLogout }) => {
           </span>
         </div>
       )}
-      
+
       {isCompleted && (
         <h3 style={embeddedStyles.cardTitle}>Order #{assignment.orderId}</h3>
       )}
-      
+
       {assignment.roundId && (
         <p style={{ ...embeddedStyles.cardInfoRow, color: '#aaa' }}>
           <strong>Round #{assignment.roundId}</strong>
         </p>
       )}
-      
+
       <p style={embeddedStyles.cardInfoRow}>
         <span style={{ color: '#888' }}>Items: </span>
         <span>{assignment.items?.map(i => {
@@ -622,25 +794,25 @@ const Volunteer_Dashboard = ({ userData, onLogout }) => {
           return itemText;
         }).join(', ')}</span>
       </p>
-      
+
       <p style={embeddedStyles.cardInfoRow}>
         <span style={{ color: '#888' }}>Address: </span>
         <span>{assignment.deliveryAddress}</span>
       </p>
-      
+
       <p style={embeddedStyles.cardInfoRow}>
         <span style={{ color: '#888' }}>Phone: </span>
         <span>{assignment.phoneNumber}</span>
       </p>
-      
+
       {assignment.notes && (
         <p style={embeddedStyles.cardInfoRow}>
           <span style={{ color: '#888' }}>Notes: </span>
           <span>{assignment.notes}</span>
         </p>
       )}
-      
-      <button 
+
+      <button
         style={{ ...embeddedStyles.viewDetailsBtn, marginTop: '10px' }}
         onClick={() => openOrderFullView(assignment)}
         onMouseOver={(e) => e.target.style.backgroundColor = '#002d5f'}
@@ -678,7 +850,7 @@ const Volunteer_Dashboard = ({ userData, onLogout }) => {
         <div className="volunteer-left-panel">
           <br />
           <br />
-          
+
           {/* My Current Assignments */}
           <div style={{ marginBottom: '30px' }}>
             <h2 style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -686,7 +858,7 @@ const Volunteer_Dashboard = ({ userData, onLogout }) => {
               <span style={{ fontSize: '14px', color: '#ccc' }}>
                 ({activeAssignments.length} active)
               </span>
-              <button 
+              <button
                 onClick={loadMyAssignments}
                 style={{
                   marginLeft: 'auto',
@@ -703,9 +875,9 @@ const Volunteer_Dashboard = ({ userData, onLogout }) => {
                 🔄 Refresh
               </button>
             </h2>
-            
+
             {ordersError && <p className="error-text">{ordersError}</p>}
-            
+
             <div style={embeddedStyles.roundsCardsContainer}>
               {isLoadingOrders ? (
                 <p style={{ color: '#ccc', padding: '20px', textAlign: 'center', width: '100%' }}>
@@ -719,7 +891,7 @@ const Volunteer_Dashboard = ({ userData, onLogout }) => {
                       Sign up for rounds to access orders
                     </p>
                   ) : (
-                    <button 
+                    <button
                       onClick={() => navigate("/volunteer/orders")}
                       style={{
                         marginTop: '12px',
@@ -753,13 +925,12 @@ const Volunteer_Dashboard = ({ userData, onLogout }) => {
               border: '1px solid rgba(255, 255, 255, 0.05)',
               marginBottom: '20px'
             }}>
-              
               <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
                 <div>
-                  <label style={{ 
-                    display: 'block', 
-                    color: '#f6b800', 
-                    fontSize: '14px', 
+                  <label style={{
+                    display: 'block',
+                    color: '#f6b800',
+                    fontSize: '14px',
                     fontWeight: 'bold',
                     marginBottom: '5px'
                   }}>
@@ -782,12 +953,12 @@ const Volunteer_Dashboard = ({ userData, onLogout }) => {
                     }}
                   />
                 </div>
-                
+
                 <div>
-                  <label style={{ 
-                    display: 'block', 
-                    color: '#f6b800', 
-                    fontSize: '14px', 
+                  <label style={{
+                    display: 'block',
+                    color: '#f6b800',
+                    fontSize: '14px',
                     fontWeight: 'bold',
                     marginBottom: '5px'
                   }}>
@@ -810,12 +981,12 @@ const Volunteer_Dashboard = ({ userData, onLogout }) => {
                     }}
                   />
                 </div>
-                
+
                 <div>
-                  <label style={{ 
-                    display: 'block', 
-                    color: '#f6b800', 
-                    fontSize: '14px', 
+                  <label style={{
+                    display: 'block',
+                    color: '#f6b800',
+                    fontSize: '14px',
                     fontWeight: 'bold',
                     marginBottom: '5px'
                   }}>
@@ -839,7 +1010,7 @@ const Volunteer_Dashboard = ({ userData, onLogout }) => {
                     }}
                   />
                 </div>
-                
+
                 <button
                   onClick={submitSpecialOrder}
                   disabled={isSubmittingSpecialOrder}
@@ -868,7 +1039,7 @@ const Volunteer_Dashboard = ({ userData, onLogout }) => {
           <div style={embeddedStyles.roundsCardsContainer}>
             {myUpcomingRounds.length === 0 ? (
               <p style={{ color: '#aaa', padding: '20px', textAlign: 'center', width: '100%' }}>
-                No upcoming rounds yet. Check the calendar to sign up!
+                No upcoming rounds yet.
               </p>
             ) : (
               myUpcomingRounds.map((r) => renderRoundCard(r))
@@ -916,67 +1087,142 @@ const Volunteer_Dashboard = ({ userData, onLogout }) => {
         {/* Vertical Divider */}
         <div className="vertical-line"></div>
 
-        {/* Right Panel - Calendar */}
-        <div className="volunteer-right-panel">
-          <br /><br /><br />
-          <h2><strong>Select a date to see rounds</strong></h2>
-          <br /><br />
-          {allRoundsError && <p className="error-text">{allRoundsError}</p>}
-          <Calendar onClickDay={handleDateClick} tileClassName={highlightDates} />
-          
-          {/* Rounds Modal for Selected Date */}
-          {showRoundsModal && (
-            <div className="rounds-modal">
-              <div className="rounds-modal-content">
-                <h3>Rounds on {selectedDate.toDateString()}</h3>
-                {roundsForSelectedDate.length === 0 && <p>No rounds scheduled for this date.</p>}
-                {roundsForSelectedDate.map((r) => (
-                  <div key={r.roundId} className="round-detail">
-                    <h4>{r.title}</h4>
-                    <p>{r.description}</p>
-                    <p><strong>Location:</strong> {r.location}</p>
-                    <p><strong>Start:</strong> {new Date(r.startTime).toLocaleString()}</p>
-                    <p><strong>End:</strong> {new Date(r.endTime).toLocaleString()}</p>
-                    <p><strong>Available Slots:</strong> {r.availableSlots}</p>
-                    <p><strong>Order Capacity:</strong> {r.currentOrderCount || 0}/{r.orderCapacity || 20}</p>
-                    <p><strong>Already Signed Up?</strong> {r.userSignedUp ? "Yes" : "No"}</p>
-                    {r.userSignedUp ? (
-                      <p style={{ color: "green" }}>You are already signed up.</p>
-                    ) : r.openForSignup ? (
-                      <button onClick={() => signupForRound(r.roundId, "VOLUNTEER")}>Sign Up</button>
-                    ) : (
-                      <p style={{ color: "red" }}>No slots available.</p>
-                    )}
-                  </div>
-                ))}
-                <button className="close-modal-btn" onClick={() => setShowRoundsModal(false)}>
-                  Close
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
+          <div className="volunteer-right-panel">
+            <br />
+            <br />
 
+            {/* OUTER CONTAINER*/}
+            <div style={{
+              backgroundColor: '#1a2332',
+              borderRadius: '16px',
+              padding: '20px',
+              boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
+              border: '1px solid rgba(255,255,255,0.05)'
+            }}>
+
+              {/* HEADER BAR*/}
+              <div style={{
+                backgroundColor: '#0d3b73',
+                borderRadius: '12px',
+                padding: '14px 18px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+                marginBottom: '16px',
+                position: 'relative'
+              }}>
+              
+                <span style={{ marginLeft: '10px' }}>
+                  <strong>Available Rounds</strong>
+                </span>
+
+                <span style={{ fontSize: '14px', color: '#ccc' }}>
+                  ({availableRounds.length} available)
+                </span>
+
+                {hiddenAvailableRoundIds.length > 0 && (
+                  <button
+                    onClick={unhideAllRounds}
+                    style={{
+                      marginLeft: 'auto',
+                      padding: '6px 12px',
+                      fontSize: '12px',
+                      backgroundColor: '#3498db',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      fontWeight: 'bold'
+                    }}
+                  >
+                    Show Hidden
+                  </button>
+                )}
+              </div>
+
+              {/* CONTENT AREA */}
+              <div style={embeddedStyles.availableRoundsContainer}>
+                {availableRounds.length === 0 ? (
+                  <div style={embeddedStyles.emptyState}>
+                    <p style={embeddedStyles.emptyStateText}>No open rounds right now</p>
+                    <p style={embeddedStyles.emptyStateSubtext}>
+                      Check back later for new round opportunities
+                    </p>
+                  </div>
+                ) : (
+                  availableRounds.map((r) => renderAvailableRoundCard(r))
+                )}
+              </div>
+
+            </div>
+          </div>
         {/* Full View Modal for Round Details */}
         {fullViewModalOpen && selectedRoundDetails && (
           <div className="fullview-modal" onClick={closeFullViewModal}>
             <div className="fullview-modal-content" onClick={(e) => e.stopPropagation()}>
               <h2>{selectedRoundDetails.title}</h2>
               <hr style={{ border: 'none', borderTop: '1px solid #ddd', margin: '15px 0' }} />
+
               <p><strong>Description:</strong> {selectedRoundDetails.description}</p>
               <p><strong>Location:</strong> {selectedRoundDetails.location}</p>
               <p><strong>Start:</strong> {new Date(selectedRoundDetails.startTime).toLocaleString()}</p>
               <p><strong>End:</strong> {new Date(selectedRoundDetails.endTime).toLocaleString()}</p>
-              <p><strong>Available Slots:</strong> {selectedRoundDetails.availableSlots}</p>
+
+              <p>
+                <strong>Volunteers:</strong> {getCurrentVolunteerCount(selectedRoundDetails)} / {getVolunteerCapacity(selectedRoundDetails)}
+              </p>
+
+              {!isRoundOpenForSignup(selectedRoundDetails) && (
+                <p>
+                  <strong>Waitlist:</strong> {getWaitlistCount(selectedRoundDetails)} / {getWaitlistCapacity(selectedRoundDetails)}
+                </p>
+              )}
+
               <p><strong>Order Capacity:</strong> {selectedRoundDetails.currentOrderCount || 0}/{selectedRoundDetails.orderCapacity || 20}</p>
               <p><strong>Already Signed Up?</strong> {selectedRoundDetails.userSignedUp ? "Yes" : "No"}</p>
-              
+
+              {!selectedRoundDetails.userSignedUp && isRoundOpenForSignup(selectedRoundDetails) && (
+                <button
+                  className="close-modal-btn"
+                  style={{ marginRight: '10px', backgroundColor: '#27ae60' }}
+                  onClick={() => signupForRound(selectedRoundDetails.roundId, "VOLUNTEER")}
+                >
+                  Sign Up
+                </button>
+              )}
+
+              {!selectedRoundDetails.userSignedUp &&
+                !isRoundOpenForSignup(selectedRoundDetails) &&
+                isRoundOpenForWaitlist(selectedRoundDetails) && (
+                  <button
+                    className="close-modal-btn"
+                    style={{ marginRight: '10px', backgroundColor: '#f6b800', color: '#333' }}
+                    onClick={() => signupForRound(selectedRoundDetails.roundId, "VOLUNTEER")}
+                  >
+                    Join Waitlist
+                  </button>
+              )}
+
+              {!selectedRoundDetails.userSignedUp && (
+                <button
+                  className="close-modal-btn"
+                  style={{ marginRight: '10px', backgroundColor: '#555' }}
+                  onClick={() => {
+                    hideRoundFromDashboard(selectedRoundDetails.roundId);
+                    closeFullViewModal();
+                  }}
+                >
+                  Hide
+                </button>
+              )}
+
               {selectedRoundDetails.userSignedUp &&
                 (selectedRoundDetails.signupDetails || selectedRoundDetails.signupId) && (
                   <button className="cancel-signup-btn" onClick={handleCancelSignupFullView}>
                     Cancel Signup
                   </button>
-                )}
+              )}
+
               <button className="close-modal-btn" onClick={closeFullViewModal}>
                 Close
               </button>
@@ -1036,7 +1282,6 @@ const Volunteer_Dashboard = ({ userData, onLogout }) => {
             zIndex: '1000'
           }}
           onClick={() => {
-            // GPS location logging will be implemented here
             navigator.geolocation.getCurrentPosition(async (position) => {
               await secureAxios.post("/api/interactions/log", {
                 latitude: position.coords.latitude,
