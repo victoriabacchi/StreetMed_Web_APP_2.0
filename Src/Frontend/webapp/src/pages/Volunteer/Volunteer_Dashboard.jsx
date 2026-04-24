@@ -837,7 +837,18 @@ const Volunteer_Dashboard = ({ userData, onLogout }) => {
           <button className="nav-btn" onClick={() => navigate("/volunteer/orders")}>
             📦 Order Management
           </button>
-          <button className="nav-btn" onClick={() => navigate("/cargo_volunteer")}>
+          <button className="nav-btn" onClick={() => navigate("/volunteer_calendar")}>
+            Calendar
+          </button>
+          <button
+            className="nav-btn"
+            onClick={() => navigate("/cargo_volunteer")}
+            style={{
+              backgroundColor: 'transparent',
+              color: '#ffffff',
+              border: '2px solid #4f7f99'
+            }}
+          >
             Cargo
           </button>
           <button className="nav-btn" onClick={onLogout}>
