@@ -7,10 +7,8 @@ function Round_Admin() {
   const navigate = useNavigate();
   const userData = JSON.parse(sessionStorage.getItem("auth_user")) || {};
 
-  // Mobile detection state
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 
-  // Handle window resize
   useEffect(() => {
     const handleResize = () => {
       setIsMobile(window.innerWidth <= 768);
@@ -21,13 +19,13 @@ function Round_Admin() {
 
   const [activeTab, setActiveTab] = useState("viewRounds");
   const [rounds, setRounds] = useState([]);
-  const [roundFilter, setRoundFilter] = useState("upcoming"); // Default to upcoming
-  const [isLoading, setIsLoading] = useState(true); // Loading state
+  const [roundFilter, setRoundFilter] = useState("upcoming");
+  const [isLoading, setIsLoading] = useState(true);
   const [newRound, setNewRound] = useState({
     title: "",
     description: "",
-    startTime: "",
-    endTime: "",
+    startDate: "",
+    startTimeOption: "6:30 PM",
     location: "",
     maxParticipants: "",
     orderCapacity: "",
@@ -36,7 +34,6 @@ function Round_Admin() {
   });
   const today = new Date().toISOString().slice(0, 16);
   const [message, setMessage] = useState("");
-  const [successMessage, setSuccessMessage] = useState("");
 
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedRound, setSelectedRound] = useState(null);
@@ -47,23 +44,38 @@ function Round_Admin() {
   const [editRoundData, setEditRoundData] = useState(null);
   const [editMessage, setEditMessage] = useState("");
 
-  // Auto-dismiss success message after 30 seconds
-  useEffect(() => {
-    if (successMessage) {
-      const timer = setTimeout(() => {
-        setSuccessMessage("");
-      }, 30000);
-      return () => clearTimeout(timer);
-    }
-  }, [successMessage]);
+  const pad2 = (n) => String(n).padStart(2, "0");
 
-  // Format datetime for input fields
+  const todayDateString = () => {
+    const now = new Date();
+    return `${now.getFullYear()}-${pad2(now.getMonth() + 1)}-${pad2(now.getDate())}`;
+  };
+
+  const toDatetimeLocalString = (d) => {
+    return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}T${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+  };
+
+  const timeLabelTo24h = (label) => {
+    if (label === "1:30 PM") return { hours: 13, minutes: 30 };
+    return { hours: 18, minutes: 30 };
+  };
+
+  const buildStartEndTimes = (startDate, startTimeOption) => {
+    const [y, m, d] = startDate.split("-").map(Number);
+    const { hours, minutes } = timeLabelTo24h(startTimeOption);
+    const start = new Date(y, m - 1, d, hours, minutes, 0, 0);
+    const end = new Date(start.getTime() + 3 * 60 * 60 * 1000);
+    return {
+      startTime: toDatetimeLocalString(start),
+      endTime: toDatetimeLocalString(end),
+    };
+  };
+
   const formatDatetimeLocal = (dt) => {
     if (!dt) return "";
     return new Date(dt).toISOString().slice(0, 16);
   };
 
-  // Format datetime for display (no seconds)
   const formatDisplayDateTime = (dt) => {
     if (!dt) return "N/A";
     const date = new Date(dt);
@@ -77,7 +89,6 @@ function Round_Admin() {
     });
   };
 
-  // Fetch rounds function
   const fetchRounds = useCallback(async (filter) => {
     const filterToUse = filter || roundFilter;
     try {
@@ -107,41 +118,37 @@ function Round_Admin() {
     }
   }, [roundFilter, userData.username]);
 
-  // Pre-load rounds on component mount
   useEffect(() => {
     fetchRounds("upcoming");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Create round
   const createRound = async () => {
-
-    // Error messages for inputs
-    if(newRound.maxParticipants < 5) {
+    if (!newRound.startDate) {
+      setMessage("Please select a start date.");
+      return;
+    }
+    if (newRound.maxParticipants < 5) {
       setMessage("Minimum participants must be at least 5.");
       return;
     }
-    if(newRound.maxParticipants > 100) {
+    if (newRound.maxParticipants > 100) {
       setMessage("Maximum participants cannot exceed 100.");
       return;
     }
-    if(newRound.orderCapacity > 100) {
+    if (newRound.orderCapacity > 100) {
       setMessage("Maximum orders cannot exceed 100.");
       return;
     }
 
-    const start = new Date(newRound.startTime);
-    const end = new Date(newRound.endTime);
+    const { startTime, endTime } = buildStartEndTimes(newRound.startDate, newRound.startTimeOption);
+
+    const start = new Date(startTime);
     const now = new Date();
-    if(start < now) {
+    if (start < now) {
       setMessage("Rounds cannot be scheduled in the past.");
       return;
     }
-    if(start > end) {
-      setMessage("End time must be after start time");
-      return;
-    }
-
 
     try {
       const payload = {
@@ -149,8 +156,8 @@ function Round_Admin() {
         adminUsername: userData.username,
         title: newRound.title,
         description: newRound.description,
-        startTime: newRound.startTime,
-        endTime: newRound.endTime,
+        startTime,
+        endTime,
         location: newRound.location,
         maxParticipants: parseInt(newRound.maxParticipants, 10),
         orderCapacity: parseInt(newRound.orderCapacity, 10) || 20
@@ -166,12 +173,12 @@ function Round_Admin() {
 
       const response = await secureAxios.post('/api/admin/rounds/create', payload);
       if (response.data.status === "success") {
-        setSuccessMessage("Round created successfully! ID: " + response.data.roundId);
+        setMessage("Round created successfully! ID: " + response.data.roundId);
         setNewRound({
           title: "",
           description: "",
-          startTime: "",
-          endTime: "",
+          startDate: "",
+          startTimeOption: "6:30 PM",
           location: "",
           maxParticipants: "",
           orderCapacity: "20",
@@ -192,7 +199,6 @@ function Round_Admin() {
     }
   };
 
-  // Cancel round
   const cancelRoundById = async (roundId, e) => {
     e.stopPropagation();
     if (!window.confirm(`Are you sure you want to cancel Round #${roundId}?`)) {
@@ -219,7 +225,6 @@ function Round_Admin() {
     }
   };
 
-  // Fetch orders for a round
   const fetchRoundOrders = async (roundId) => {
     try {
       const response = await secureAxios.get(`/api/admin/rounds/${roundId}/order-status`, {
@@ -237,7 +242,6 @@ function Round_Admin() {
     }
   };
 
-  // Auto-assign orders
   const autoAssignOrders = async () => {
     try {
       const response = await secureAxios.post('/api/admin/rounds/auto-assign-orders', {
@@ -256,7 +260,6 @@ function Round_Admin() {
     }
   };
 
-  // Modal functions
   const openModal = (round) => {
     setSelectedRound(round);
     setModalOpen(true);
@@ -274,7 +277,6 @@ function Round_Admin() {
     setEditRoundData(null);
   };
 
-  // Switch to edit mode
   const startEditMode = () => {
     setEditRoundData({
       roundId: selectedRound.roundId,
@@ -290,30 +292,28 @@ function Round_Admin() {
     setModalTab("edit");
   };
 
-  // Update round
   const updateRoundFromModal = async () => {
     setEditMessage("");
-    if(editRoundData.maxParticipants < 5) {
+    if (editRoundData.maxParticipants < 5) {
       setEditMessage("Minimum participants must be at least 5.");
       return;
     }
-    if(editRoundData.maxParticipants > 100) {
+    if (editRoundData.maxParticipants > 100) {
       setEditMessage("Maximum participants cannot exceed 100.");
       return;
     }
-
-    if(editRoundData.orderCapacity > 100) {
+    if (editRoundData.orderCapacity > 100) {
       setEditMessage("Maximum orders cannot exceed 100.");
       return;
     }
     const start = new Date(editRoundData.startTime);
     const end = new Date(editRoundData.endTime);
     const now = new Date();
-    if(start < now) {
+    if (start < now) {
       setEditMessage("Rounds cannot be scheduled in the past.");
       return;
     }
-    if(start > end) {
+    if (start > end) {
       setEditMessage("End time must be after start time");
       return;
     }
@@ -356,7 +356,6 @@ function Round_Admin() {
     }
   };
 
-  // Run lottery
   const runLotteryForModal = async () => {
     try {
       const response = await secureAxios.post(`/api/admin/rounds/${selectedRound.roundId}/lottery`, {
@@ -374,7 +373,6 @@ function Round_Admin() {
     }
   };
 
-  // Fetch signups
   const fetchModalSignups = async () => {
     try {
       const response = await secureAxios.get(`/api/admin/rounds/${selectedRound.roundId}`, {
@@ -392,7 +390,6 @@ function Round_Admin() {
     }
   };
 
-  // Confirm/Reject signups
   const confirmSignup = async (signupId) => {
     try {
       const response = await secureAxios.put(`/api/admin/rounds/signup/${signupId}/confirm`, {
@@ -433,7 +430,6 @@ function Round_Admin() {
     }
   };
 
-  // Handle filter change
   const handleFilterChange = (filter) => {
     setRoundFilter(filter);
     fetchRounds(filter);
@@ -441,7 +437,7 @@ function Round_Admin() {
 
   return (
     <div className="rounds-container">
-      {/* NAVBAR - Zero CSS classes, pure inline */}
+      {/* NAVBAR */}
       <div style={{
         display: isMobile ? 'block' : 'flex',
         flexDirection: 'row',
@@ -507,7 +503,7 @@ function Round_Admin() {
           >
             Create Round
           </button>
-          <button 
+          <button
             onClick={autoAssignOrders}
             style={{
               display: 'block',
@@ -530,7 +526,7 @@ function Round_Admin() {
         </div>
 
         <div style={{ marginTop: isMobile ? '8px' : '0' }}>
-          <button 
+          <button
             onClick={() => navigate("/")}
             style={{
               display: 'block',
@@ -551,12 +547,6 @@ function Round_Admin() {
           </button>
         </div>
       </div>
-
-      {successMessage && (
-        <div className="success-banner">
-          <strong>✓ {successMessage}</strong>
-        </div>
-      )}
 
       <h1 className="rounds-title">Rounds Administration</h1>
 
@@ -583,7 +573,7 @@ function Round_Admin() {
                     All
                   </button>
                 </div>
-                <button 
+                <button
                   className="refresh-btn"
                   onClick={() => fetchRounds()}
                   disabled={isLoading}
@@ -616,8 +606,8 @@ function Round_Admin() {
                   </thead>
                   <tbody>
                     {rounds.map((round) => (
-                      <tr 
-                        key={round.roundId} 
+                      <tr
+                        key={round.roundId}
                         onClick={() => openModal(round)}
                         className="rounds-table-row"
                       >
@@ -687,35 +677,38 @@ function Round_Admin() {
                 </div>
                 <div className="form-row">
                   <div className="form-group">
-                    <label>Start Time *</label>
+                    <label>Start Date *</label>
                     <input
                       className="input"
-                      type="datetime-local"
-                      value={newRound.startTime}
-                      min = {today}
-                      onChange={(e) => setNewRound({ ...newRound, startTime: e.target.value })}
+                      type="date"
+                      min={todayDateString()}
+                      value={newRound.startDate}
+                      onChange={(e) => setNewRound({ ...newRound, startDate: e.target.value })}
                     />
                   </div>
                   <div className="form-group">
-                    <label>End Time *</label>
-                    <input
+                    <label>Start Time *</label>
+                    <select
                       className="input"
-                      type="datetime-local"
-                      value={newRound.endTime}
-                      min = {today}
-                      onChange={(e) => setNewRound({ ...newRound, endTime: e.target.value })}
-                    />
+                      value={newRound.startTimeOption}
+                      onChange={(e) => setNewRound({ ...newRound, startTimeOption: e.target.value })}
+                    >
+                      <option value="6:30 PM">6:30 PM</option>
+                      <option value="1:30 PM">1:30 PM</option>
+                    </select>
                   </div>
                 </div>
                 <div className="form-group">
                   <label>Location *</label>
-                  <input
+                  <select
                     className="input"
-                    type="text"
-                    placeholder="Enter location"
                     value={newRound.location}
                     onChange={(e) => setNewRound({ ...newRound, location: e.target.value })}
-                  />
+                  >
+                    <option value="">Select location</option>
+                    <option value="Downtown">Downtown</option>
+                    <option value="East Liberty">East Liberty</option>
+                  </select>
                 </div>
                 <div className="form-row">
                   <div className="form-group">
@@ -748,7 +741,7 @@ function Round_Admin() {
                         setNewRound({ ...newRound, orderCapacity: e.target.value });
                       }}
                       onKeyDown={(e) => {
-                        if(e.key === '-' || e.key === 'e') e.preventDefault();
+                        if (e.key === '-' || e.key === 'e') e.preventDefault();
                       }}
                     />
                   </div>
@@ -833,10 +826,10 @@ function Round_Admin() {
             </div>
 
             <div className="modal-body">
-              {/* EDIT MESSAGE */}
               {editMessage && (
                 <p className="error-text">{editMessage}</p>
               )}
+
               {/* DETAILS TAB */}
               {modalTab === "details" && (
                 <div className="details-grid">
@@ -889,7 +882,7 @@ function Round_Admin() {
                   </div>
                 </div>
               )}
-              
+
               {/* EDIT TAB */}
               {modalTab === "edit" && editRoundData && (
                 <div className="edit-form">
@@ -918,7 +911,7 @@ function Round_Admin() {
                         className="input"
                         type="datetime-local"
                         value={editRoundData.startTime}
-                        min = {today}
+                        min={today}
                         onChange={(e) => setEditRoundData({ ...editRoundData, startTime: e.target.value })}
                       />
                     </div>
@@ -928,7 +921,7 @@ function Round_Admin() {
                         className="input"
                         type="datetime-local"
                         value={editRoundData.endTime}
-                        min = {today}
+                        min={today}
                         onChange={(e) => setEditRoundData({ ...editRoundData, endTime: e.target.value })}
                       />
                     </div>
@@ -956,7 +949,7 @@ function Round_Admin() {
                           setEditMessage("");
                         }}
                         onKeyDown={(e) => {
-                          if(e.key === '-' || e.key === 'e') e.preventDefault();
+                          if (e.key === '-' || e.key === 'e') e.preventDefault();
                         }}
                       />
                     </div>
@@ -973,7 +966,7 @@ function Round_Admin() {
                           setEditMessage("");
                         }}
                         onKeyDown={(e) => {
-                          if(e.key === '-' || e.key === 'e') e.preventDefault();
+                          if (e.key === '-' || e.key === 'e') e.preventDefault();
                         }}
                       />
                     </div>
@@ -1113,7 +1106,6 @@ function Round_Admin() {
 
       {/* INLINE STYLES */}
       <style>{`
-        /* Stats Bar */
         .rounds-stats-bar {
           display: flex;
           gap: 15px;
@@ -1146,7 +1138,6 @@ function Round_Admin() {
           margin-top: 4px;
         }
 
-        /* Header Actions */
         .header-actions {
           display: flex;
           align-items: center;
@@ -1174,7 +1165,6 @@ function Round_Admin() {
           cursor: not-allowed;
         }
 
-        /* Table Rows */
         .rounds-table-row {
           cursor: pointer;
           transition: background-color 0.2s;
@@ -1184,7 +1174,6 @@ function Round_Admin() {
           background-color: rgba(255,255,255,0.05) !important;
         }
 
-        /* Capacity Badge */
         .capacity-badge {
           display: inline-block;
           padding: 4px 10px;
@@ -1200,7 +1189,6 @@ function Round_Admin() {
           color: #fbbf24;
         }
 
-        /* Status Badge - Rounds */
         .status-badge-round {
           display: inline-block;
           padding: 5px 12px;
@@ -1242,7 +1230,6 @@ function Round_Admin() {
           color: #ffffff;
         }
 
-        /* Action Buttons */
         .action-btn {
           padding: 8px 16px;
           border: none;
@@ -1291,7 +1278,6 @@ function Round_Admin() {
           color: #ffffff;
         }
 
-        /* Signup Status */
         .signup-status {
           padding: 3px 8px;
           border-radius: 4px;
@@ -1309,7 +1295,6 @@ function Round_Admin() {
           color: #f59e0b;
         }
 
-        /* Lottery Section */
         .lottery-section {
           text-align: center;
           padding: 30px;
@@ -1329,7 +1314,6 @@ function Round_Admin() {
           color: #10b981;
         }
 
-        /* Order Summary */
         .order-summary {
           color: #ffffff;
           margin-bottom: 15px;
@@ -1342,7 +1326,6 @@ function Round_Admin() {
           color: #f6b800;
         }
 
-        /* Loading & Empty States */
         .loading-container {
           padding: 40px;
           text-align: center;
@@ -1356,7 +1339,6 @@ function Round_Admin() {
           font-size: 14px;
         }
 
-        /* Modal Improvements */
         .modal-container {
           background: #1a2332;
           max-width: 700px;
@@ -1393,7 +1375,6 @@ function Round_Admin() {
           border-top: 1px solid rgba(255,255,255,0.1);
         }
 
-        /* Form Improvements */
         .form-group label {
           color: #cccccc;
         }
@@ -1409,7 +1390,6 @@ function Round_Admin() {
           padding: 12px;
         }
 
-        /* Responsive */
         @media (max-width: 768px) {
           .rounds-stats-bar {
             flex-wrap: wrap;
@@ -1476,6 +1456,35 @@ function Round_Admin() {
           .rounds-stat-label {
             font-size: 10px;
           }
+        }
+
+        select.input {
+          padding: 10px 12px;
+          padding-right: 36px;
+          background-color: var(--bg-white);
+          color: var(--text-primary);
+          appearance: none;
+          -webkit-appearance: none;
+          background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23333' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+          background-repeat: no-repeat;
+          background-position: right 12px center;
+          border: 1px solid var(--border-medium);
+          border-radius: var(--border-radius-md);
+          font-family: inherit;
+          font-size: var(--font-size-sm);
+          width: 100%;
+          cursor: pointer;
+        }
+
+        select.input:focus {
+          outline: none;
+          border-color: var(--primary-blue);
+          box-shadow: 0 0 0 3px rgba(0, 62, 126, 0.1);
+        }
+
+        select.input option {
+          background-color: var(--bg-white);
+          color: var(--text-primary);
         }
       `}</style>
     </div>
