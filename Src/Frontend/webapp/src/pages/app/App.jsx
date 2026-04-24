@@ -16,6 +16,7 @@ import CargoVolunteer from "../Volunteer/Cargo_Volunteer";
 import ResetPassword from "../Login/ResetPassword";
 import RoundAdmin from "../Round/Round_Admin";
 import VolunteerDashboard from "../Volunteer/Volunteer_Dashboard";
+import VolunteerCalendar from "../Volunteer/volunteer_calendar";
 import BeforeLogin from "../Login/Before_Login";
 import AdminUsers from "../Admin/Admin_Users";   
 import AdminOrders from "../Admin/Admin_Orders";
@@ -215,6 +216,7 @@ function App({ securityInitialized = false }) {
             />
           } 
         />
+        <Route path="/volunteer_calendar" element={<VolunteerCalendar userData={userData} onLogout={handleLogout} />} />
         <Route path="/volunteer/orders" element={<VolunteerOrders userData={userData} />} />
         <Route path="/orderhistory" element={<HomeOrderHistory userId={userData.userId} />} />
         <Route path="/register" element={<Register />} />
